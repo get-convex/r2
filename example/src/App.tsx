@@ -6,6 +6,7 @@ import { api } from "../convex/_generated/api";
 export function App() {
   const generateUploadUrl = useAction(api.example.generateUploadUrl);
   const sendImage = useMutation(api.example.sendImage);
+  const deleteImage = useAction(api.example.deleteImage);
   const images = useQuery(api.example.getRecentImages);
   const imageInput = useRef<HTMLInputElement>(null);
   const [sending, setSending] = useState(false);
@@ -58,6 +59,11 @@ export function App() {
             <div key={image._id} className="image-row">
               <p>{image.author}</p>
               <img src={image.url} alt={image.author} width={80} />
+              <button
+                onClick={() => deleteImage({ storageId: image.storageId })}
+              >
+                Delete
+              </button>
             </div>
           ))}
         </div>

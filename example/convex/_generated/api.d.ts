@@ -40,6 +40,18 @@ export declare const internal: FilterApi<
 export declare const components: {
   r2: {
     lib: {
+      deleteObject: FunctionReference<
+        "action",
+        "internal",
+        {
+          accessKeyId: string;
+          bucket: string;
+          endpoint: string;
+          key: string;
+          secretAccessKey: string;
+        },
+        any
+      >;
       generateUploadUrl: FunctionReference<
         "action",
         "internal",

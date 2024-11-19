@@ -5,5 +5,5 @@ export default defineSchema({
   images: defineTable({
     storageId: v.string(),
     author: v.string(),
-  }),
+  }).index("storageId", ["storageId"]),
 });

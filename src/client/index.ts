@@ -1,18 +1,15 @@
 import {
-  actionGeneric,
   Expand,
   FunctionReference,
   GenericActionCtx,
   GenericDataModel,
   GenericQueryCtx,
-  queryGeneric,
 } from "convex/server";
 import { GenericId, v } from "convex/values";
 import { api } from "../component/_generated/api";
 import { GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { getUrl } from "../component/lib";
 
 export class R2 {
   public readonly bucket: string;
@@ -65,6 +62,15 @@ export class R2 {
       })
     );
   }
+  async delete(ctx: RunActionCtx, key: string) {
+    await ctx.runAction(this.component.lib.deleteObject, {
+      key,
+      bucket: this.bucket,
+      endpoint: this.endpoint,
+      accessKeyId: this.accessKeyId,
+      secretAccessKey: this.secretAccessKey,
+    });
+  }
 
   /**
    * For easy re-exporting.
@@ -80,6 +86,9 @@ export class R2 {
       },
       getUrl: (key: string) => {
         return this.getUrl(key);
+      },
+      delete: (ctx: RunActionCtx, key: string) => {
+        return this.delete(ctx, key);
       },
     };
   }

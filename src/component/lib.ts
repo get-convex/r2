@@ -1,5 +1,6 @@
 import { action, query } from "./_generated/server";
 import {
+  DeleteObjectCommand,
   GetObjectCommand,
   PutObjectCommand,
   S3Client,
@@ -58,6 +59,29 @@ export const getUrl = query({
         Bucket: args.bucket,
         Key: args.key,
       })
+    );
+  },
+});
+
+export const deleteObject = action({
+  args: {
+    key: v.string(),
+    bucket: v.string(),
+    endpoint: v.string(),
+    accessKeyId: v.string(),
+    secretAccessKey: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const r2 = new S3Client({
+      region: "auto",
+      endpoint: args.endpoint,
+      credentials: {
+        accessKeyId: args.accessKeyId,
+        secretAccessKey: args.secretAccessKey,
+      },
+    });
+    await r2.send(
+      new DeleteObjectCommand({ Bucket: args.bucket, Key: args.key })
     );
   },
 });
