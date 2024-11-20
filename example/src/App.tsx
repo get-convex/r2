@@ -4,8 +4,8 @@ import { FormEvent, useRef, useState } from "react";
 import { api } from "../convex/_generated/api";
 
 // Set to true to use HTTP Action instead of signed URL
-const GET_VIA_HTTP = false;
-const SEND_VIA_HTTP = false;
+const GET_VIA_HTTP = true;
+const SEND_VIA_HTTP = true;
 
 export function App() {
   const generateUploadUrl = useAction(api.example.generateUploadUrl);

@@ -2,28 +2,19 @@ import { action, query } from "./_generated/server";
 import {
   DeleteObjectCommand,
   GetObjectCommand,
+  HeadObjectCommand,
   PutObjectCommand,
-  S3Client,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { v } from "convex/values";
+import { r2ConfigValidator, createR2Client } from "../util";
 
 export const generateUploadUrl = action({
   args: {
-    bucket: v.string(),
-    endpoint: v.string(),
-    accessKeyId: v.string(),
-    secretAccessKey: v.string(),
+    ...r2ConfigValidator.fields,
   },
   handler: async (ctx, args) => {
-    const r2 = new S3Client({
-      region: "auto",
-      endpoint: args.endpoint,
-      credentials: {
-        accessKeyId: args.accessKeyId,
-        secretAccessKey: args.secretAccessKey,
-      },
-    });
+    const r2 = createR2Client(args);
     const key = crypto.randomUUID();
     const url = await getSignedUrl(
       r2,
@@ -38,21 +29,11 @@ export const generateUploadUrl = action({
 
 export const store = action({
   args: {
+    ...r2ConfigValidator.fields,
     url: v.string(),
-    bucket: v.string(),
-    endpoint: v.string(),
-    accessKeyId: v.string(),
-    secretAccessKey: v.string(),
   },
   handler: async (ctx, args) => {
-    const r2 = new S3Client({
-      region: "auto",
-      endpoint: args.endpoint,
-      credentials: {
-        accessKeyId: args.accessKeyId,
-        secretAccessKey: args.secretAccessKey,
-      },
-    });
+    const r2 = createR2Client(args);
 
     const response = await fetch(args.url);
     const blob = await response.blob();
@@ -71,20 +52,10 @@ export const store = action({
 export const getUrl = query({
   args: {
     key: v.string(),
-    bucket: v.string(),
-    endpoint: v.string(),
-    accessKeyId: v.string(),
-    secretAccessKey: v.string(),
+    ...r2ConfigValidator.fields,
   },
   handler: async (ctx, args) => {
-    const r2 = new S3Client({
-      region: "auto",
-      endpoint: args.endpoint,
-      credentials: {
-        accessKeyId: args.accessKeyId,
-        secretAccessKey: args.secretAccessKey,
-      },
-    });
+    const r2 = createR2Client(args);
     return await getSignedUrl(
       r2,
       new GetObjectCommand({
@@ -98,22 +69,32 @@ export const getUrl = query({
 export const deleteObject = action({
   args: {
     key: v.string(),
-    bucket: v.string(),
-    endpoint: v.string(),
-    accessKeyId: v.string(),
-    secretAccessKey: v.string(),
+    ...r2ConfigValidator.fields,
   },
   handler: async (ctx, args) => {
-    const r2 = new S3Client({
-      region: "auto",
-      endpoint: args.endpoint,
-      credentials: {
-        accessKeyId: args.accessKeyId,
-        secretAccessKey: args.secretAccessKey,
-      },
-    });
+    const r2 = createR2Client(args);
     await r2.send(
       new DeleteObjectCommand({ Bucket: args.bucket, Key: args.key })
     );
+  },
+});
+
+export const getMetadata = action({
+  args: {
+    key: v.string(),
+    ...r2ConfigValidator.fields,
+  },
+  handler: async (ctx, args) => {
+    const r2 = createR2Client(args);
+    const command = new HeadObjectCommand({
+      Bucket: args.bucket,
+      Key: args.key,
+    });
+    const response = await r2.send(command);
+    return {
+      ContentType: response.ContentType,
+      ContentLength: response.ContentLength,
+      LastModified: response.LastModified?.toISOString(),
+    };
   },
 });

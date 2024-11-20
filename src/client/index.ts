@@ -6,18 +6,16 @@ import {
   httpActionGeneric,
   HttpRouter,
 } from "convex/server";
-import { GenericId } from "convex/values";
+import { GenericId, Infer } from "convex/values";
 import { api } from "../component/_generated/api";
 import { GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { createR2Client, r2ConfigValidator } from "../util";
 
 export class R2 {
-  public readonly bucket: string;
-  public readonly endpoint: string;
-  public readonly accessKeyId: string;
-  public readonly secretAccessKey: string;
-  public r2: S3Client;
+  public readonly r2Config: Infer<typeof r2ConfigValidator>;
+  public readonly r2: S3Client;
   constructor(
     public component: UseApi<typeof api>,
     options: {
@@ -27,27 +25,21 @@ export class R2 {
       R2_SECRET_ACCESS_KEY?: string;
     } = {}
   ) {
-    this.bucket = options?.R2_BUCKET ?? process.env.R2_BUCKET!;
-    this.endpoint = options?.R2_ENDPOINT ?? process.env.R2_ENDPOINT!;
-    this.accessKeyId =
-      options?.R2_ACCESS_KEY_ID ?? process.env.R2_ACCESS_KEY_ID!;
-    this.secretAccessKey =
-      options?.R2_SECRET_ACCESS_KEY ?? process.env.R2_SECRET_ACCESS_KEY!;
-    this.r2 = new S3Client({
-      region: "auto",
-      endpoint: this.endpoint,
-      credentials: {
-        accessKeyId: this.accessKeyId,
-        secretAccessKey: this.secretAccessKey,
-      },
-    });
+    this.r2Config = {
+      bucket: options?.R2_BUCKET ?? process.env.R2_BUCKET!,
+      endpoint: options?.R2_ENDPOINT ?? process.env.R2_ENDPOINT!,
+      accessKeyId: options?.R2_ACCESS_KEY_ID ?? process.env.R2_ACCESS_KEY_ID!,
+      secretAccessKey:
+        options?.R2_SECRET_ACCESS_KEY ?? process.env.R2_SECRET_ACCESS_KEY!,
+    };
+    this.r2 = createR2Client(this.r2Config);
   }
   async generateUploadUrl() {
     const key = crypto.randomUUID();
     const url = await getSignedUrl(
       this.r2,
       new PutObjectCommand({
-        Bucket: this.bucket,
+        Bucket: this.r2Config.bucket,
         Key: key,
       })
     );
@@ -56,17 +48,14 @@ export class R2 {
   async store(ctx: RunActionCtx, url: string) {
     return await ctx.runAction(this.component.lib.store, {
       url,
-      bucket: this.bucket,
-      endpoint: this.endpoint,
-      accessKeyId: this.accessKeyId,
-      secretAccessKey: this.secretAccessKey,
+      ...this.r2Config,
     });
   }
   async getUrl(key: string) {
     return await getSignedUrl(
       this.r2,
       new GetObjectCommand({
-        Bucket: this.bucket,
+        Bucket: this.r2Config.bucket,
         Key: key,
       })
     );
@@ -74,10 +63,13 @@ export class R2 {
   async deleteByKey(ctx: RunActionCtx, key: string) {
     await ctx.runAction(this.component.lib.deleteObject, {
       key,
-      bucket: this.bucket,
-      endpoint: this.endpoint,
-      accessKeyId: this.accessKeyId,
-      secretAccessKey: this.secretAccessKey,
+      ...this.r2Config,
+    });
+  }
+  async getMetadata(ctx: RunActionCtx, key: string) {
+    return await ctx.runAction(this.component.lib.getMetadata, {
+      key,
+      ...this.r2Config,
     });
   }
   registerRoutes(
@@ -103,11 +95,10 @@ export class R2 {
         const { pathname } = new URL(request.url);
         const key = pathname.split("/").pop()!;
         const command = new GetObjectCommand({
-          Bucket: this.bucket,
+          Bucket: this.r2Config.bucket,
           Key: key,
         });
         const response = await this.r2.send(command);
-        console.log(response);
 
         if (!response.Body) {
           return new Response("Image not found", {
@@ -124,13 +115,12 @@ export class R2 {
         const blob = await request.blob();
         const key = crypto.randomUUID();
         const command = new PutObjectCommand({
-          Bucket: this.bucket,
+          Bucket: this.r2Config.bucket,
           Key: key,
           Body: blob,
           ContentType: request.headers.get("Content-Type") ?? undefined,
         });
         await this.r2.send(command);
-
         if (onSend) {
           await ctx.runMutation(onSend, { key, requestUrl: request.url });
         }

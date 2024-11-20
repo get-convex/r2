@@ -451,4 +451,40 @@ export const deleteByKey = mutation({
 });
 ```
 
+## Accessing File Metadata
+File metadata of an R2 file can be accessed from actions via `r2.getMetadata`:
+
+```ts
+// convex/images.ts
+import { v } from "convex/values";
+import { query } from "./_generated/server";
+import { R2 } from "@convex-dev/r2";
+
+const r2 = new R2(components.r2);
+
+export const getMetadata = query({
+  args: {
+    key: v.string(),
+  },
+  handler: async (ctx, args) => {
+    return await r2.getMetadata(args.key);
+  },
+});
+
+This is an example of the returned document:
+
+```json
+{
+  "ContentType": "image/jpeg",
+  "ContentLength": 125338,
+  "LastModified": "2024-03-20T12:34:56Z",
+}
+```
+
+The returned document has the following fields:
+
+- `ContentType`: the ContentType of the file if it was provided on upload
+- `ContentLength`: the size of the file in bytes
+- `LastModified`: the last modified date of the file
+
 <!-- END: Include on https://convex.dev/components -->

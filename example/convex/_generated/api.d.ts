@@ -65,6 +65,18 @@ export declare const components: {
         },
         any
       >;
+      getMetadata: FunctionReference<
+        "action",
+        "internal",
+        {
+          accessKeyId: string;
+          bucket: string;
+          endpoint: string;
+          key: string;
+          secretAccessKey: string;
+        },
+        any
+      >;
       getUrl: FunctionReference<
         "query",
         "internal",

@@ -51,6 +51,18 @@ export type Mounts = {
       },
       any
     >;
+    getMetadata: FunctionReference<
+      "action",
+      "public",
+      {
+        accessKeyId: string;
+        bucket: string;
+        endpoint: string;
+        key: string;
+        secretAccessKey: string;
+      },
+      any
+    >;
     getUrl: FunctionReference<
       "query",
       "public",
