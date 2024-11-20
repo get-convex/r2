@@ -21,14 +21,14 @@ export const getRecentImages = query({
     return Promise.all(
       images.map(async (image) => ({
         ...image,
-        url: await r2.getUrl(image.storageId),
+        url: await r2.getUrl(image.key),
       }))
     );
   },
 });
 
 export const sendImage = mutation({
-  args: { storageId: v.string(), author: v.string() },
+  args: { key: v.string(), author: v.string() },
   handler: async (ctx, args) => {
     await ctx.db.insert("images", args);
   },
@@ -42,18 +42,18 @@ export const httpSendImage = internalMutation({
       throw new Error("Author is required");
     }
     await ctx.db.insert("images", {
-      storageId: args.key,
+      key: args.key,
       author,
     });
   },
 });
 
 export const deleteImageRef = internalMutation({
-  args: { storageId: v.string() },
+  args: { key: v.string() },
   handler: async (ctx, args) => {
     const image = await ctx.db
       .query("images")
-      .withIndex("storageId", (q) => q.eq("storageId", args.storageId))
+      .withIndex("key", (q) => q.eq("key", args.key))
       .first();
     if (image) {
       await ctx.db.delete(image._id);
@@ -62,9 +62,9 @@ export const deleteImageRef = internalMutation({
 });
 
 export const deleteImage = action({
-  args: { storageId: v.string() },
+  args: { key: v.string() },
   handler: async (ctx, args) => {
-    await r2.deleteByKey(ctx, args.storageId);
+    await r2.deleteByKey(ctx, args.key);
     await ctx.runMutation(internal.example.deleteImageRef, args);
   },
 });

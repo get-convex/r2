@@ -3,7 +3,7 @@ import { v } from "convex/values";
 
 export default defineSchema({
   images: defineTable({
-    storageId: v.string(),
+    key: v.string(),
     author: v.string(),
-  }).index("storageId", ["storageId"]),
+  }).index("key", ["key"]),
 });

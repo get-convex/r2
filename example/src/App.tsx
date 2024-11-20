@@ -4,6 +4,7 @@ import { FormEvent, useRef, useState } from "react";
 import { api } from "../convex/_generated/api";
 
 // Set to true to use HTTP Action instead of signed URL
+const GET_VIA_HTTP = false;
 const SEND_VIA_HTTP = false;
 
 export function App() {
@@ -38,7 +39,7 @@ export function App() {
       throw new Error(`Failed to upload image: ${error}`);
     }
     // Step 3: Save the newly allocated storage id to the database
-    await sendImage({ storageId: key, author: name });
+    await sendImage({ key, author: name });
     setSending(false);
     setSelectedImage(null);
     imageInput.current!.value = "";
@@ -100,10 +101,16 @@ export function App() {
           {images?.map((image) => (
             <div key={image._id} className="image-row">
               <p>{image.author}</p>
-              <img src={image.url} alt={image.author} width={80} />
-              <button
-                onClick={() => deleteImage({ storageId: image.storageId })}
-              >
+              <img
+                src={
+                  GET_VIA_HTTP
+                    ? `https://giant-kangaroo-636.convex.site/r2/get/${image.key}`
+                    : image.url
+                }
+                alt={image.author}
+                width={80}
+              />
+              <button onClick={() => deleteImage({ key: image.key })}>
                 Delete
               </button>
             </div>

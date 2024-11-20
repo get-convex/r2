@@ -83,7 +83,7 @@ export class R2 {
   registerRoutes(
     http: HttpRouter,
     {
-      path = "/r2/send",
+      pathPrefix = "/r2",
       onSend,
       clientOrigin = process.env.CLIENT_ORIGIN!,
     }: {
@@ -93,11 +93,31 @@ export class R2 {
         { key: string; requestUrl: string }
       >;
       clientOrigin?: string;
-      path?: string;
+      pathPrefix?: string;
     } = {}
   ) {
     http.route({
-      path,
+      pathPrefix: `${pathPrefix}/get/`,
+      method: "GET",
+      handler: httpActionGeneric(async (ctx, request) => {
+        const { pathname } = new URL(request.url);
+        const key = pathname.split("/").pop()!;
+        const command = new GetObjectCommand({
+          Bucket: this.bucket,
+          Key: key,
+        });
+        const response = await this.r2.send(command);
+
+        if (!response.Body) {
+          return new Response("Image not found", {
+            status: 404,
+          });
+        }
+        return new Response(await response.Body.transformToByteArray());
+      }),
+    });
+    http.route({
+      path: `${pathPrefix}/send`,
       method: "POST",
       handler: httpActionGeneric(async (ctx, request) => {
         const blob = await request.blob();
@@ -126,7 +146,7 @@ export class R2 {
     });
     // Pre-flight request for /sendImage
     http.route({
-      path: "/r2/send",
+      path: `${pathPrefix}/send`,
       method: "OPTIONS",
       handler: httpActionGeneric(async (_, request) => {
         // Make sure the necessary headers are present

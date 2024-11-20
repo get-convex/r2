@@ -260,10 +260,8 @@ const http = httpRouter();
 const r2 = new R2(components.r2);
 
 r2.registerRoutes(http, {
-  onSend: internal.messages.sendImage,
   clientOrigin: "http://localhost:5173",
-  // Optional: set a custom path for the HTTP action
-  path: "/r2/sendImage",
+  onSend: internal.messages.sendImage,
 });
 
 export default http;
@@ -389,6 +387,45 @@ File URLs can be used in img elements to render images:
 // src/App.tsx
 function Image({ message }: { message: { url: string } }) {
   return <img src={message.url} height="300px" width="auto" />;
+}
+```
+
+### Serving files from HTTP actions
+You can serve R2 files directly from HTTP actions.
+
+This enables access control at the time the file is served, such as when an image is displayed on a website. But note that the HTTP actions response size is currently limited to 20MB. For larger files you need to use file URLs as described above.
+
+A file Blob object can be returned from the `/r2/get/:key` HTTP action:
+
+```ts
+// convex/http.ts
+TS
+import { R2 } from "@convex-dev/r2";
+import { httpRouter } from "convex/server";
+import { components, internal } from "./_generated/api";
+
+const http = httpRouter();
+
+const r2 = new R2(components.r2);
+
+r2.registerRoutes(http, {
+  onSend: internal.example.httpSendImage,
+  clientOrigin: "http://localhost:5173",
+});
+
+export default http;
+```
+
+The URL of the HTTP action can be used directly in img elements to render images:
+
+```tsx
+// src/App.tsx
+const convexSiteUrl = import.meta.env.VITE_CONVEX_SITE_URL;
+
+function Image({ key }: { key: string }) {
+  // e.g. https://happy-animal-123.convex.site/r2/get/456
+  const getImageUrl = new URL(`${convexSiteUrl}/r2/get/${key}`);
+  return <img src={getImageUrl.href} height="300px" width="auto" />;
 }
 ```
 
