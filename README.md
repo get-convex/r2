@@ -295,6 +295,59 @@ export const sendImage = internalMutation({
 });
 ```
 
+## Storing Generated Files
+Files can be uploaded to R2 from a client and stored directly, see Upload.
+
+Alternatively, files can be stored after they've been fetched or generated in actions and HTTP actions. For example you might call a third-party API to generate an image based on a user prompt and then store that image in R2.
+
+### Storing files in actions
+Storing files in actions is similar to uploading a file via an HTTP action.
+
+The action takes these steps:
+
+1. Fetch or generate an image.
+1. Store the image by sending the image URL to the `r2.store` action and receive an object key.
+1. Save the object key into your data model via a mutation.
+
+```ts
+// convex/images.ts
+import { action, internalMutation, query } from "./_generated/server";
+import { internal } from "./_generated/api";
+import { v } from "convex/values";
+import { Id } from "./_generated/dataModel";
+import { R2 } from "@convex-dev/r2";
+
+const r2 = new R2(components.r2);
+
+export const generateAndStore = action({
+  args: { prompt: v.string() },
+  handler: async (ctx, args) => {
+    // Not shown: generate imageUrl from `prompt`
+    const imageUrl = "https://....";
+
+    // Store the image in R2
+    const key = await r2.store(imageUrl);
+
+    // Write `key` to a document
+    await ctx.runMutation(internal.images.storeResult, {
+      key,
+      prompt: args.prompt,
+    });
+  },
+});
+
+export const storeResult = internalMutation({
+  args: {
+    key: v.string(),
+    prompt: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const { key, prompt } = args;
+    await ctx.db.insert("images", { key, prompt });
+  },
+});
+```
+
 ## Serving Files
 
 Files stored in R2 can be served to your users by generating a URL pointing to a given file.

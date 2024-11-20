@@ -36,6 +36,37 @@ export const generateUploadUrl = action({
   },
 });
 
+export const store = action({
+  args: {
+    url: v.string(),
+    bucket: v.string(),
+    endpoint: v.string(),
+    accessKeyId: v.string(),
+    secretAccessKey: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const r2 = new S3Client({
+      region: "auto",
+      endpoint: args.endpoint,
+      credentials: {
+        accessKeyId: args.accessKeyId,
+        secretAccessKey: args.secretAccessKey,
+      },
+    });
+
+    const response = await fetch(args.url);
+    const blob = await response.blob();
+    const key = crypto.randomUUID();
+    const command = new PutObjectCommand({
+      Bucket: args.bucket,
+      Key: key,
+      Body: blob,
+    });
+    await r2.send(command);
+    return key;
+  },
+});
+
 export const getUrl = query({
   args: {
     key: v.string(),

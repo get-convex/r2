@@ -63,6 +63,18 @@ export type Mounts = {
       },
       any
     >;
+    store: FunctionReference<
+      "action",
+      "public",
+      {
+        accessKeyId: string;
+        bucket: string;
+        endpoint: string;
+        secretAccessKey: string;
+        url: string;
+      },
+      any
+    >;
   };
 };
 // For now fullApiWithMounts is only fullApi which provides

@@ -3,7 +3,6 @@ import {
   FunctionReference,
   GenericActionCtx,
   GenericDataModel,
-  GenericQueryCtx,
   httpActionGeneric,
   HttpRouter,
 } from "convex/server";
@@ -53,6 +52,15 @@ export class R2 {
       })
     );
     return { key, url };
+  }
+  async store(ctx: RunActionCtx, url: string) {
+    return await ctx.runAction(this.component.lib.store, {
+      url,
+      bucket: this.bucket,
+      endpoint: this.endpoint,
+      accessKeyId: this.accessKeyId,
+      secretAccessKey: this.secretAccessKey,
+    });
   }
   async getUrl(key: string) {
     return await getSignedUrl(
@@ -161,9 +169,6 @@ export class R2 {
 }
 
 /* Type utils follow */
-type RunQueryCtx = {
-  runQuery: GenericQueryCtx<GenericDataModel>["runQuery"];
-};
 type RunActionCtx = {
   runAction: GenericActionCtx<GenericDataModel>["runAction"];
 };
