@@ -61,6 +61,7 @@ export const store = action({
       Bucket: args.bucket,
       Key: key,
       Body: blob,
+      ContentType: response.headers.get("Content-Type") ?? undefined,
     });
     await r2.send(command);
     return key;

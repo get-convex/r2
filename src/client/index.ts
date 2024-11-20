@@ -107,6 +107,7 @@ export class R2 {
           Key: key,
         });
         const response = await this.r2.send(command);
+        console.log(response);
 
         if (!response.Body) {
           return new Response("Image not found", {
@@ -126,6 +127,7 @@ export class R2 {
           Bucket: this.bucket,
           Key: key,
           Body: blob,
+          ContentType: request.headers.get("Content-Type") ?? undefined,
         });
         await this.r2.send(command);
 
