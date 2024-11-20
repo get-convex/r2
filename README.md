@@ -1,152 +1,46 @@
-# Convex Component Template
+# Convex R2 Component
 
-This is a Convex component, ready to be published on npm.
+[![npm version](https://badge.fury.io/js/@convex-dev%2Fr2.svg)](https://badge.fury.io/js/@convex-dev%2Fr2)
 
-To create your own component:
-
-1. Find and replace "Counter" to your component's Name.
-1. Find and replace "counter" to your component's name.
-1. Write code in src/component for your component.
-1. Write code in src/client for your thick client.
-1. Write example usage in example/convex/example.ts.
-1. Delete the text in this readme until `---` and flesh out the README.
-
-It is safe to find & replace "counter" project-wide.
-
-To develop your component run a dev process in the example project.
-
-```
-npm i
-cd example
-npm i
-npx convex dev
-```
-
-Modify the schema and index files in src/component/ to define your component.
-
-Write a client for using this component in src/client/index.ts.
-
-If you won't be adding frontend code (e.g. React components) to this
-component you can delete the following:
-
-- "prepack" and "postpack" scripts of package.json
-- "./react" exports in package.json
-- the "src/react/" directory
-- the "node10stubs.mjs" file
-
-### Component Directory structure
-
-```
-.
-├── README.md           documentation of your component
-├── package.json        component name, version number, other metadata
-├── package-lock.json   Components are like libraries, package-lock.json
-│                       is .gitignored and ignored by consumers.
-├── src
-│   ├── component/
-│   │   ├── _generated/ Files here are generated.
-│   │   ├── convex.config.ts  Name your component here and use other components
-│   │   ├── index.ts    Define functions here and in new files in this directory
-│   │   └── schema.ts   schema specific to this component
-│   ├── client/index.ts "Thick" client code goes here.
-│   └── react/          Code intended to be used on the frontend goes here.
-│       │               Your are free to delete this if this component
-│       │               does not provide code.
-│       └── index.ts
-├── example/            example Convex app that uses this component
-│   │                   Run 'npx convex dev' from here during development.
-│   ├── package.json.ts Thick client code goes here.
-│   └── convex/
-│       ├── _generated/
-│       ├── convex.config.ts  Imports and uses this component
-│       ├── myFunctions.ts    Functions that use the component
-│       ├── schema.ts         Example app schema
-│       └── tsconfig.json
-│  
-├── dist/               Publishing artifacts will be created here.
-├── commonjs.json       Used during build by TypeScript.
-├── esm.json            Used during build by TypeScript.
-├── node10stubs.mjs     Script used during build for compatibility
-│                       with the Metro bundler used with React Native.
-├── eslint.config.mjs   Recommended lints for writing a component.
-│                       Feel free to customize it.
-└── tsconfig.json       Recommended tsconfig.json for writing a component.
-                        Some settings can be customized, some are required.
-```
-
-### Structure of a Convex Component
-
-A Convex components exposes the entry point convex.config.js. The on-disk
-location of this file must be a directory containing implementation files. These
-files should be compiled to ESM.
-The package.json should contain `"type": "module"` and the tsconfig.json should
-contain `"moduleResolution": "Bundler"` or `"Node16"` in order to import other
-component definitions.
-
-In addition to convex.config.js, a component typically exposes a client that
-wraps communication with the component for use in the Convex
-environment is typically exposed as a named export `MyComponentClient` or
-`MyComponent` imported from the root package.
-
-```
-import { MyComponentClient } from "my-convex-component";
-```
-
-When frontend code is included it is typically published at a subpath:
-
-```
-import { helper } from "my-convex-component/react";
-import { FrontendReactComponent } from "my-convex-component/react";
-```
-
-Frontend code should be compiled as CommonJS code as well as ESM and make use of
-subpackage stubs (see next section).
-
-If you do include frontend components, prefer peer dependencies to avoid using
-more than one version of e.g. React.
-
-### Support for Node10 module resolution
-
-The [Metro](https://reactnative.dev/docs/metro) bundler for React Native
-requires setting
-[`resolver.unstable_enablePackageExports`](https://metrobundler.dev/docs/package-exports/)
-in order to import code that lives in `dist/esm/react.js` from a path like
-`my-convex-component/react`.
-
-Authors of Convex component that provide frontend components are encouraged to
-support these legacy "Node10-style" module resolution algorithms by generating
-stub directories with special pre- and post-pack scripts.
-
----
-
-# Convex Counter Component
-
-[![npm version](https://badge.fury.io/js/@convex-dev%2Fcounter.svg)](https://badge.fury.io/js/@convex-dev%2Fcounter)
-
-**Note: Convex Components are currently in beta**
+**Note: Convex Components are currently in beta.**
 
 <!-- START: Include on https://convex.dev/components -->
 
-- [ ] What is some compelling syntax as a hook?
-- [ ] Why should you use this component?
-- [ ] Links to Stack / other resources?
+Store and serve files with Cloudflare R2.
 
-Found a bug? Feature request? [File it here](https://github.com/get-convex/counter/issues).
+## Prerequisites
 
-## Pre-requisite: Convex
+### Cloudflare Account
 
-You'll need an existing Convex project to use the component.
-Convex is a hosted backend platform, including a database, serverless functions,
-and a ton more you can learn about [here](https://docs.convex.dev/get-started).
+- [Create a Cloudflare account](https://cloudflare.com)
+- [Create an R2 bucket](https://developers.cloudflare.com/r2/buckets/create-buckets/)
+- Set the bucket name as an environment variable `R2_BUCKET` in your Convex
+  deployment
+- Create an API token
+  - On the main R2 page in your Cloudflare dashboard, click **Manage R2 API
+    Tokens**
+  - Click **Create API Token**
+  - Edit the token name
+  - Set permissions to **Object Read & Write**
+  - Under **Specify bucket**, select the bucket you created above
+  - Optionally change TTL
+  - Click **Create API Token**
+- On the next screen you'll be provided with four values that you'll need later:
+  - **Token Value**: `R2_TOKEN`
+  - **Access Key ID**: `R2_ACCESS_KEY_ID`
+  - **Secret Access Key**: `R2_SECRET_ACCESS_KEY`
+  - **Endpoint**: `R2_ENDPOINT`
 
-Run `npm create convex` or follow any of the [quickstarts](https://docs.convex.dev/home) to set one up.
+### Convex App
+
+You'll need a Convex App to use the component. Follow any of the [Convex quickstarts](https://docs.convex.dev/home) to set one up.
 
 ## Installation
 
 Install the component package:
 
 ```ts
-npm install @convex-dev/counter
+npm install @convex-dev/r2
 ```
 
 Create a `convex.config.ts` file in your app's `convex/` folder and install the component by calling `use`:
@@ -154,25 +48,211 @@ Create a `convex.config.ts` file in your app's `convex/` folder and install the 
 ```ts
 // convex/convex.config.ts
 import { defineApp } from "convex/server";
-import counter from "@convex-dev/counter/convex.config";
+import r2 from "@convex-dev/r2/convex.config";
 
 const app = defineApp();
-app.use(counter);
+app.use(r2);
 
 export default app;
 ```
 
-## Usage
+Set your API credentials using the values you recorded earlier:
+
+```sh
+npx convex env set R2_TOKEN=xxxxx
+npx convex env set R2_ACCESS_KEY_ID=xxxxx
+npx convex env set R2_SECRET_ACCESS_KEY=xxxxx
+npx convex env set R2_ENDPOINT=xxxxx
+npx convex env set R2_BUCKET=xxxxx
+```
+
+Instantiate a R2 Component client in a file in your app's `convex/` folder:
 
 ```ts
+// convex/example.ts
+import { R2 } from "@convex-dev/r2";
 import { components } from "./_generated/api";
-import { Counter } from "@convex-dev/counter";
 
-const counter = new Counter(components.counter, {
-  ...options,
+export const r2 = new R2(components.r2);
+
+// Example usage: create an action to generate an R2 upload URL
+export const generateUploadUrl = action(() => {
+  return r2.generateUploadUrl();
 });
 ```
 
-See more example usage in [example.ts](./example/convex/example.ts).
+## Uploading and Storing Files
+
+Upload files to R2 by generated upload urls.
+
+### Uploading files via upload URLs
+Arbitrarily large files can be uploaded directly to your backend using a generated upload URL. This requires the client to make 3 requests:
+
+1. Generate an upload URL and object key using a mutation that calls `r2.generateUploadUrl()`.
+1. Send a POST request with the object key and file contents to the upload URL.
+1. Save the object key into your data model via another mutation.
+
+In the first mutation that generates the upload URL you can control who can upload files to your R2 storage.
+
+#### Calling the upload APIs from a web page
+Here's an example of uploading an image via a form submission handler to an upload URL generated by a mutation:
+
+```tsx
+// src/App.tsx
+import { FormEvent, useRef, useState } from "react";
+import { useMutation } from "convex/react";
+import { api } from "../convex/_generated/api";
+
+export default function App() {
+  const generateUploadUrl = useMutation(api.messages.generateUploadUrl);
+  const sendImage = useMutation(api.messages.sendImage);
+
+  const imageInput = useRef<HTMLInputElement>(null);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+
+  const [name] = useState(() => "User " + Math.floor(Math.random() * 10000));
+  async function handleSendImage(event: FormEvent) {
+    event.preventDefault();
+
+    // Step 1: Get a short-lived upload URL
+    const { url, key } = await generateUploadUrl();
+    // Step 2: POST the file to the URL
+    await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": selectedImage!.type },
+      body: selectedImage,
+    });
+    // Step 3: Save the newly allocated object key to the database
+    await sendImage({ key, author: name });
+
+    setSelectedImage(null);
+    imageInput.current!.value = "";
+  }
+  return (
+    <form onSubmit={handleSendImage}>
+      <input
+        type="file"
+        accept="image/*"
+        ref={imageInput}
+        onChange={(event) => setSelectedImage(event.target.files![0])}
+        disabled={selectedImage !== null}
+      />
+      <input
+        type="submit"
+        value="Send Image"
+        disabled={selectedImage === null}
+      />
+    </form>
+  );
+}
+```
+
+#### Generating the upload URL
+An upload URL can be generated by the `generateUploadUrl` function of the R2 component client:
+
+```ts
+// convex/messages.ts
+TS
+import { components } from "./_generated/api";
+import { mutation } from "./_generated/server";
+import { R2 } from "@convex-dev/r2";
+
+const r2 = new R2(components.r2);
+
+export const generateUploadUrl = mutation((ctx) => {
+  return r2.generateUploadUrl();
+});
+```
+
+This mutation can control who is allowed to upload files.
+
+#### Writing the new object key to the database
+Since the object key is returned to the client it is likely you will want to persist it in the database via another mutation:
+
+```ts
+// convex/messages.ts
+import { components } from "./_generated/api";
+import { mutation } from "./_generated/server";
+import { R2 } from "@convex-dev/r2";
+
+const r2 = new R2(components.r2);
+
+export const sendImage = mutation({
+  args: { key: v.string(), author: v.string() },
+  handler: async (ctx, args) => {
+    await ctx.db.insert("messages", {
+      body: args.key,
+      author: args.author,
+      format: "image",
+    });
+  },
+});
+```
+
+## Serving Files
+
+Files stored in R2 can be served to your users by generating a URL pointing to a given file.
+
+### Generating file URLs in queries
+The simplest way to serve files is to return URLs along with other data required by your app from queries and mutations.
+
+A file URL can be generated from a object key by the `r2.getUrl` function of the
+R2 component client.
+
+```ts
+// convex/listMessages.ts
+import { components } from "./_generated/api";
+import { query, mutation } from "./_generated/server";
+import { R2 } from "@convex-dev/r2";
+
+const r2 = new R2(components.r2);
+
+export const list = query({
+  args: {},
+  handler: async (ctx) => {
+    const messages = await ctx.db.query("messages").collect();
+    return Promise.all(
+      messages.map(async (message) => ({
+        ...message,
+        // If the message is an "image" its `body` is an object key
+        ...(message.format === "image"
+          ? { url: await r2.getUrl(message.body) }
+          : {}),
+      })),
+    );
+  },
+});
+```
+
+File URLs can be used in img elements to render images:
+
+```tsx
+// src/App.tsx
+function Image({ message }: { message: { url: string } }) {
+  return <img src={message.url} height="300px" width="auto" />;
+}
+```
+
+## Deleting Files
+
+Files stored in R2 can be deleted from actions via the `r2.delete` function, which accepts an object key.
+
+```ts
+// convex/images.ts
+import { v } from "convex/values";
+import { mutation } from "./_generated/server";
+import { R2 } from "@convex-dev/r2";
+
+const r2 = new R2(components.r2);
+
+export const deleteByKey = mutation({
+  args: {
+    key: v.string(),
+  },
+  handler: async (ctx, args) => {
+    return await r2.deleteByKey(args.key);
+  },
+});
+```
 
 <!-- END: Include on https://convex.dev/components -->

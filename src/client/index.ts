@@ -62,7 +62,7 @@ export class R2 {
       })
     );
   }
-  async delete(ctx: RunActionCtx, key: string) {
+  async deleteByKey(ctx: RunActionCtx, key: string) {
     await ctx.runAction(this.component.lib.deleteObject, {
       key,
       bucket: this.bucket,
@@ -76,19 +76,13 @@ export class R2 {
    * For easy re-exporting.
    * Apps can do
    * ```ts
-   * export const { generateUploadUrl } = r2.api();
+   * export const { deleteByKey } = r2.api();
    * ```
    */
   api() {
     return {
-      generateUploadUrl: () => {
-        return this.generateUploadUrl();
-      },
-      getUrl: (key: string) => {
-        return this.getUrl(key);
-      },
-      delete: (ctx: RunActionCtx, key: string) => {
-        return this.delete(ctx, key);
+      deleteByKey: (ctx: RunActionCtx, key: string) => {
+        return this.deleteByKey(ctx, key);
       },
     };
   }

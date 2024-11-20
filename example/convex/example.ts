@@ -8,14 +8,10 @@ import {
 } from "./_generated/server";
 import { components, internal } from "./_generated/api";
 import { R2 } from "@convex-dev/r2";
-import { Doc } from "./_generated/dataModel";
 const r2 = new R2(components.r2);
 
-export const generateUploadUrl = action({
-  args: {},
-  handler: async () => {
-    return await r2.generateUploadUrl();
-  },
+export const generateUploadUrl = action(() => {
+  return r2.generateUploadUrl();
 });
 
 export const getRecentImages = query({
@@ -54,7 +50,7 @@ export const deleteImageRef = internalMutation({
 export const deleteImage = action({
   args: { storageId: v.string() },
   handler: async (ctx, args) => {
-    await r2.delete(ctx, args.storageId);
+    await r2.deleteByKey(ctx, args.storageId);
     await ctx.runMutation(internal.example.deleteImageRef, args);
   },
 });
