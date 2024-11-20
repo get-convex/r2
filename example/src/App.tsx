@@ -3,6 +3,9 @@ import { useAction, useMutation, useQuery } from "convex/react";
 import { FormEvent, useRef, useState } from "react";
 import { api } from "../convex/_generated/api";
 
+// Set to true to use HTTP Action instead of signed URL
+const SEND_VIA_HTTP = false;
+
 export function App() {
   const generateUploadUrl = useAction(api.example.generateUploadUrl);
   const sendImage = useMutation(api.example.sendImage);
@@ -14,23 +17,58 @@ export function App() {
 
   const [name] = useState(() => "User " + Math.floor(Math.random() * 10000));
 
-  async function handleSendImage(event: FormEvent) {
+  async function handleSendImageViaSignedUrl(event: FormEvent) {
     event.preventDefault();
     setSending(true);
     // Step 1: Get a short-lived upload URL
     const { url, key } = await generateUploadUrl();
     // Step 2: PUT the file to the URL
-    const result = await fetch(url, {
-      method: "PUT",
-      headers: { "Content-Type": selectedImage!.type },
-      body: selectedImage,
-    });
-    if (!result.ok) {
+    try {
+      const result = await fetch(url, {
+        method: "PUT",
+        headers: { "Content-Type": selectedImage!.type },
+        body: selectedImage,
+      });
+      if (!result.ok) {
+        setSending(false);
+        throw new Error(`Failed to upload image: ${result.statusText}`);
+      }
+    } catch (error) {
       setSending(false);
-      throw new Error(`Failed to upload image: ${result.statusText}`);
+      throw new Error(`Failed to upload image: ${error}`);
     }
     // Step 3: Save the newly allocated storage id to the database
     await sendImage({ storageId: key, author: name });
+    setSending(false);
+    setSelectedImage(null);
+    imageInput.current!.value = "";
+  }
+
+  async function handleSendImageViaHttp(event: FormEvent) {
+    event.preventDefault();
+    setSending(true);
+
+    const sendImageUrl = new URL(
+      // Use Convex Action URL
+      "https://giant-kangaroo-636.convex.site/r2/send"
+    );
+    sendImageUrl.searchParams.set("author", name);
+
+    try {
+      const result = await fetch(sendImageUrl, {
+        method: "POST",
+        headers: { "Content-Type": selectedImage!.type },
+        body: selectedImage,
+      });
+      if (!result.ok) {
+        setSending(false);
+        throw new Error(`Failed to upload image: ${result.statusText}`);
+      }
+    } catch (error) {
+      setSending(false);
+      throw new Error(`Failed to upload image: ${error}`);
+    }
+
     setSending(false);
     setSelectedImage(null);
     imageInput.current!.value = "";
@@ -40,7 +78,11 @@ export function App() {
     <>
       <h1>Convex R2 Component Example</h1>
       <div className="card">
-        <form onSubmit={handleSendImage}>
+        <form
+          onSubmit={
+            SEND_VIA_HTTP ? handleSendImageViaHttp : handleSendImageViaSignedUrl
+          }
+        >
           <input
             type="file"
             accept="image/*"

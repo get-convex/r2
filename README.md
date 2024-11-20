@@ -83,7 +83,7 @@ export const generateUploadUrl = action(() => {
 
 ## Uploading and Storing Files
 
-Upload files to R2 by generated upload urls.
+Upload files to R2 by generated upload URL or HTTP Action.
 
 ### Uploading files via upload URLs
 Arbitrarily large files can be uploaded directly to your backend using a generated upload URL. This requires the client to make 3 requests:
@@ -183,6 +183,112 @@ export const sendImage = mutation({
     await ctx.db.insert("messages", {
       body: args.key,
       author: args.author,
+      format: "image",
+    });
+  },
+});
+```
+
+### Uploading files via an HTTP action
+The file upload process can be more tightly controlled by leveraging HTTP actions, performing the whole upload flow using a single request.
+
+The custom upload HTTP action can control who can upload files to your Convex storage. But note that the HTTP action request size is currently limited to 20MB. For larger files you need to use upload URLs as described above.
+
+#### Calling the upload HTTP action from a web page
+Here's an example of uploading an image via a form submission handler to the `sendImage` HTTP action provided by the R2 component:
+
+The highlighted lines make the actual request to the HTTP action:
+
+```tsx
+// src/App.tsx
+import { FormEvent, useRef, useState } from "react";
+
+const convexSiteUrl = import.meta.env.VITE_CONVEX_SITE_URL;
+
+export default function App() {
+  const imageInput = useRef<HTMLInputElement>(null);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+
+  async function handleSendImage(event: FormEvent) {
+    event.preventDefault();
+
+    // e.g. https://happy-animal-123.convex.site/r2/sendImage?author=User+123
+    const sendImageUrl = new URL(`${convexSiteUrl}/r2/sendImage`);
+    sendImageUrl.searchParams.set("author", "Jack Smith");
+
+    await fetch(sendImageUrl, {
+      method: "POST",
+      headers: { "Content-Type": selectedImage!.type },
+      body: selectedImage,
+    });
+
+    setSelectedImage(null);
+    imageInput.current!.value = "";
+  }
+  return (
+    <form onSubmit={handleSendImage}>
+      <input
+        type="file"
+        accept="image/*"
+        ref={imageInput}
+        onChange={(event) => setSelectedImage(event.target.files![0])}
+        disabled={selectedImage !== null}
+      />
+      <input
+        type="submit"
+        value="Send Image"
+        disabled={selectedImage === null}
+      />
+    </form>
+  );
+}
+```
+
+#### Defining the upload HTTP action
+A file sent in the HTTP request body can be stored using the storage.store function of the ActionCtx object. This function returns an Id<"_storage"> of the stored file.
+
+From the HTTP action you can call a mutation to write the storage ID to a document in your database.
+
+```ts
+// convex/http.ts
+import { R2 } from "@convex-dev/r2";
+import { httpRouter } from "convex/server";
+import { components, internal } from "./_generated/api";
+
+const http = httpRouter();
+
+const r2 = new R2(components.r2);
+
+r2.registerRoutes(http, {
+  onSend: internal.messages.sendImage,
+  clientOrigin: "http://localhost:5173",
+  // Optional: set a custom path for the HTTP action
+  path: "/r2/sendImage",
+});
+
+export default http;
+```
+
+The `sendImage` mutation is called by the HTTP action with the object key and request URL as arguments when the file is uploaded. It saves the storage ID to the database:
+
+```ts
+// convex/messages.ts
+import { v } from "convex/values";
+import { internalMutation } from "./_generated/server";
+import { components, internal } from "./_generated/api";
+import { R2 } from "@convex-dev/r2";
+const r2 = new R2(components.r2);
+
+export const sendImage = internalMutation({
+  args: { key: v.string(), requestUrl: v.string() },
+  handler: async (ctx, args) => {
+    const author = new URL(args.requestUrl).searchParams.get("author");
+    if (!author) {
+      throw new Error("Author is required");
+    }
+    await ctx.db.insert("messages", {
+      body: args.key,
+      author,
       format: "image",
     });
   },

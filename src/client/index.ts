@@ -4,8 +4,10 @@ import {
   GenericActionCtx,
   GenericDataModel,
   GenericQueryCtx,
+  httpActionGeneric,
+  HttpRouter,
 } from "convex/server";
-import { GenericId, v } from "convex/values";
+import { GenericId } from "convex/values";
 import { api } from "../component/_generated/api";
 import { GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { S3Client } from "@aws-sdk/client-s3";
@@ -32,7 +34,6 @@ export class R2 {
       options?.R2_ACCESS_KEY_ID ?? process.env.R2_ACCESS_KEY_ID!;
     this.secretAccessKey =
       options?.R2_SECRET_ACCESS_KEY ?? process.env.R2_SECRET_ACCESS_KEY!;
-
     this.r2 = new S3Client({
       region: "auto",
       endpoint: this.endpoint,
@@ -69,6 +70,77 @@ export class R2 {
       endpoint: this.endpoint,
       accessKeyId: this.accessKeyId,
       secretAccessKey: this.secretAccessKey,
+    });
+  }
+  registerRoutes(
+    http: HttpRouter,
+    {
+      path = "/r2/send",
+      onSend,
+      clientOrigin = process.env.CLIENT_ORIGIN!,
+    }: {
+      onSend?: FunctionReference<
+        "mutation",
+        "internal",
+        { key: string; requestUrl: string }
+      >;
+      clientOrigin?: string;
+      path?: string;
+    } = {}
+  ) {
+    http.route({
+      path,
+      method: "POST",
+      handler: httpActionGeneric(async (ctx, request) => {
+        const blob = await request.blob();
+        const key = crypto.randomUUID();
+        const command = new PutObjectCommand({
+          Bucket: this.bucket,
+          Key: key,
+          Body: blob,
+        });
+        await this.r2.send(command);
+
+        if (onSend) {
+          await ctx.runMutation(onSend, { key, requestUrl: request.url });
+        }
+
+        return new Response(null, {
+          status: 200,
+          // CORS headers
+          headers: new Headers({
+            // e.g. https://mywebsite.com, configured on your Convex dashboard
+            "Access-Control-Allow-Origin": clientOrigin,
+            Vary: "origin",
+          }),
+        });
+      }),
+    });
+    // Pre-flight request for /sendImage
+    http.route({
+      path: "/r2/send",
+      method: "OPTIONS",
+      handler: httpActionGeneric(async (_, request) => {
+        // Make sure the necessary headers are present
+        // for this to be a valid pre-flight request
+        const headers = request.headers;
+        if (
+          headers.get("Origin") !== null &&
+          headers.get("Access-Control-Request-Method") !== null &&
+          headers.get("Access-Control-Request-Headers") !== null
+        ) {
+          return new Response(null, {
+            headers: new Headers({
+              "Access-Control-Allow-Origin": clientOrigin,
+              "Access-Control-Allow-Methods": "POST",
+              "Access-Control-Allow-Headers": "Content-Type, Digest",
+              "Access-Control-Max-Age": "86400",
+            }),
+          });
+        } else {
+          return new Response();
+        }
+      }),
     });
   }
 
