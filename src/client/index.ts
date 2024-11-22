@@ -1,28 +1,55 @@
 import {
+  ActionBuilder,
+  createFunctionHandle,
   Expand,
+  FunctionHandle,
   FunctionReference,
   GenericActionCtx,
   GenericDataModel,
   httpActionGeneric,
   HttpRouter,
+  internalActionGeneric,
+  internalMutationGeneric,
+  internalQueryGeneric,
+  MutationBuilder,
+  QueryBuilder,
+  RegisteredAction,
+  RegisteredMutation,
+  RegisteredQuery,
 } from "convex/server";
-import { GenericId, Infer } from "convex/values";
+import { GenericId, Infer, v } from "convex/values";
 import { api } from "../component/_generated/api";
-import { GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import {
+  GetObjectCommand,
+  HeadObjectCommand,
+  PutObjectCommand,
+} from "@aws-sdk/client-s3";
 import { S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { createR2Client, r2ConfigValidator } from "../util";
+import {
+  createR2Client,
+  DeleteArgs,
+  ListArgs,
+  ListResult,
+  r2ConfigValidator,
+  UploadArgs,
+} from "../shared";
+import { DataModel, Id } from "../component/_generated/dataModel";
+
+// Note: this value is hard-coded in the docstring below. Please keep in sync.
+export const DEFAULT_BATCH_SIZE = 10;
 
 export class R2 {
   public readonly r2Config: Infer<typeof r2ConfigValidator>;
   public readonly r2: S3Client;
   constructor(
     public component: UseApi<typeof api>,
-    options: {
+    public options: {
       R2_BUCKET?: string;
       R2_ENDPOINT?: string;
       R2_ACCESS_KEY_ID?: string;
       R2_SECRET_ACCESS_KEY?: string;
+      defaultBatchSize?: number;
     } = {}
   ) {
     this.r2Config = {
@@ -72,6 +99,143 @@ export class R2 {
       ...this.r2Config,
     });
   }
+  listConvexFiles({
+    batchSize: functionDefaultBatchSize,
+  }: {
+    batchSize?: number;
+  } = {}) {
+    const defaultBatchSize =
+      functionDefaultBatchSize ??
+      this.options?.defaultBatchSize ??
+      DEFAULT_BATCH_SIZE;
+    return (internalQueryGeneric as QueryBuilder<DataModel, "internal">)({
+      args: {
+        batchSize: v.optional(v.number()),
+      },
+      handler: async (ctx, args) => {
+        const numItems = args.batchSize || defaultBatchSize;
+        if (args.batchSize === 0) {
+          console.warn(`Batch size is zero. Using the default: ${numItems}\n`);
+        }
+        return await ctx.db.system.query("_storage").take(numItems);
+      },
+    }) satisfies RegisteredQuery<
+      "internal",
+      { batchSize: number },
+      Promise<
+        {
+          _id: Id<"_storage">;
+          _creationTime: number;
+          contentType?: string | undefined;
+          sha256: string;
+          size: number;
+        }[]
+      >
+    >;
+  }
+  uploadFile() {
+    return (internalActionGeneric as ActionBuilder<DataModel, "internal">)({
+      args: {
+        files: v.array(
+          v.object({
+            _id: v.id("_storage"),
+            _creationTime: v.number(),
+            contentType: v.optional(v.string()),
+            sha256: v.string(),
+            size: v.number(),
+          })
+        ),
+        deleteFn: v.string(),
+      },
+      handler: async (ctx, args) => {
+        const deleteFn = args.deleteFn as FunctionHandle<
+          "mutation",
+          { fileId: Id<"_storage"> },
+          void
+        >;
+        await Promise.all(
+          args.files.map(async (file) => {
+            const blob = await ctx.storage.get(file._id);
+            if (!blob) {
+              return;
+            }
+            await this.r2.send(
+              new PutObjectCommand({
+                Bucket: this.r2Config.bucket,
+                Key: file._id,
+                Body: blob,
+                ContentType: file.contentType ?? undefined,
+                ChecksumSHA256: file.sha256,
+              })
+            );
+            const metadata = await this.r2.send(
+              new HeadObjectCommand({
+                Bucket: this.r2Config.bucket,
+                Key: file._id,
+              })
+            );
+            if (metadata.ChecksumSHA256 !== file.sha256) {
+              throw new Error("Checksum mismatch");
+            }
+            await ctx.runMutation(deleteFn, { fileId: file._id });
+          })
+        );
+      },
+    }) satisfies RegisteredAction<
+      "internal",
+      {
+        files: {
+          contentType?: string | undefined;
+          sha256: string;
+          size: number;
+          _creationTime: number;
+          _id: Id<"_storage">;
+        }[];
+        deleteFn: string;
+      },
+      Promise<void>
+    >;
+  }
+  deleteFile() {
+    return (internalMutationGeneric as MutationBuilder<DataModel, "internal">)({
+      args: {
+        fileId: v.id("_storage"),
+      },
+      handler: async (ctx, args) => {
+        await ctx.storage.delete(args.fileId);
+      },
+    }) satisfies RegisteredMutation<
+      "internal",
+      { fileId: Id<"_storage"> },
+      Promise<void>
+    >;
+  }
+  async exportConvexFilesToR2<T extends DataModel>(
+    ctx: GenericActionCtx<T>,
+    {
+      listFn,
+      uploadFn,
+      nextFn,
+      deleteFn,
+      batchSize,
+    }: {
+      listFn: FunctionReference<"query", "internal", ListArgs, ListResult>;
+      uploadFn: FunctionReference<"action", "internal", UploadArgs>;
+      deleteFn: FunctionReference<"mutation", "internal", DeleteArgs>;
+      nextFn: FunctionReference<"action", "internal">;
+      batchSize?: number;
+    }
+  ) {
+    return await ctx.runAction(this.component.lib.exportConvexFilesToR2, {
+      ...this.r2Config,
+      listFn: await createFunctionHandle(listFn),
+      uploadFn: await createFunctionHandle(uploadFn),
+      nextFn: await createFunctionHandle(nextFn),
+      deleteFn: await createFunctionHandle(deleteFn),
+      batchSize:
+        batchSize ?? this.options?.defaultBatchSize ?? DEFAULT_BATCH_SIZE,
+    });
+  }
   registerRoutes(
     http: HttpRouter,
     {
@@ -91,7 +255,7 @@ export class R2 {
     http.route({
       pathPrefix: `${pathPrefix}/get/`,
       method: "GET",
-      handler: httpActionGeneric(async (ctx, request) => {
+      handler: httpActionGeneric(async (_ctx, request) => {
         const { pathname } = new URL(request.url);
         const key = pathname.split("/").pop()!;
         const command = new GetObjectCommand({
