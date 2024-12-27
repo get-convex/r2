@@ -88,7 +88,7 @@ Upload files to R2 by generated upload URL or HTTP Action.
 ### Uploading files via upload URLs
 Arbitrarily large files can be uploaded directly to your backend using a generated upload URL. This requires the client to make 3 requests:
 
-1. Generate an upload URL and object key using a mutation that calls `r2.generateUploadUrl()`.
+1. Generate an upload URL and object key using an action that calls `r2.generateUploadUrl()`.
 1. Send a POST request with the object key and file contents to the upload URL.
 1. Save the object key into your data model via another mutation.
 
@@ -100,11 +100,11 @@ Here's an example of uploading an image via a form submission handler to an uplo
 ```tsx
 // src/App.tsx
 import { FormEvent, useRef, useState } from "react";
-import { useMutation } from "convex/react";
+import { useAction } from "convex/react";
 import { api } from "../convex/_generated/api";
 
 export default function App() {
-  const generateUploadUrl = useMutation(api.messages.generateUploadUrl);
+  const generateUploadUrl = useAction(api.messages.generateUploadUrl);
   const sendImage = useMutation(api.messages.sendImage);
 
   const imageInput = useRef<HTMLInputElement>(null);
@@ -159,7 +159,7 @@ import { R2 } from "@convex-dev/r2";
 
 const r2 = new R2(components.r2);
 
-export const generateUploadUrl = mutation((ctx) => {
+export const generateUploadUrl = action((ctx) => {
   return r2.generateUploadUrl();
 });
 ```
@@ -260,7 +260,6 @@ const http = httpRouter();
 const r2 = new R2(components.r2);
 
 r2.registerRoutes(http, {
-  clientOrigin: "http://localhost:5173",
   onSend: internal.messages.sendImage,
 });
 
@@ -410,7 +409,6 @@ const r2 = new R2(components.r2);
 
 r2.registerRoutes(http, {
   onSend: internal.example.httpSendImage,
-  clientOrigin: "http://localhost:5173",
 });
 
 export default http;

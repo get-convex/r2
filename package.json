@@ -85,6 +85,7 @@
   "module": "./dist/esm/client/index.js",
   "dependencies": {
     "@aws-sdk/client-s3": "^3.693.0",
-    "@aws-sdk/s3-request-presigner": "^3.693.0"
+    "@aws-sdk/s3-request-presigner": "^3.693.0",
+    "convex-helpers": "^0.1.67"
   }
 }
