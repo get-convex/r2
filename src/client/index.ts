@@ -288,25 +288,9 @@ export class R2 {
         if (onSend) {
           await ctx.runMutation(onSend, { key, requestUrl: request.url });
         }
-
         return new Response(null);
       }),
     });
-  }
-
-  /**
-   * For easy re-exporting.
-   * Apps can do
-   * ```ts
-   * export const { deleteByKey } = r2.api();
-   * ```
-   */
-  api() {
-    return {
-      deleteByKey: (ctx: RunActionCtx, key: string) => {
-        return this.deleteByKey(ctx, key);
-      },
-    };
   }
 }
 

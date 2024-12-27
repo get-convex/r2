@@ -245,9 +245,11 @@ export default function App() {
 ```
 
 #### Defining the upload HTTP action
-A file sent in the HTTP request body can be stored using the storage.store function of the ActionCtx object. This function returns an Id<"_storage"> of the stored file.
-
-From the HTTP action you can call a mutation to write the storage ID to a document in your database.
+The R2 component provides a `registerRoutes` method to enable http uploads. You
+can optionally provide an `onSend` function reference to store information about
+the image after upload. You can also create multiple routes for different
+purposes based on your application's needs by calling `r2.registerRoutes`
+multiple times with different `pathPrefix` values.
 
 ```ts
 // convex/http.ts
@@ -261,12 +263,16 @@ const r2 = new R2(components.r2);
 
 r2.registerRoutes(http, {
   onSend: internal.messages.sendImage,
+  // Optional, default value is '/r2'
+  pathPrefix: '/r2'
 });
 
 export default http;
 ```
 
-The `sendImage` mutation is called by the HTTP action with the object key and request URL as arguments when the file is uploaded. It saves the storage ID to the database:
+The `sendImage` mutation is called by the HTTP action with the object key and
+request URL as arguments when the file is uploaded. It saves the object key to the
+database:
 
 ```ts
 // convex/messages.ts
@@ -293,7 +299,7 @@ export const sendImage = internalMutation({
 ```
 
 ## Storing Generated Files
-Files can be uploaded to R2 from a client and stored directly, see Upload.
+Files can be uploaded to R2 from a client and stored directly, see [Uploading and storing files](#uploading-and-storing-files).
 
 Alternatively, files can be stored after they've been fetched or generated in actions and HTTP actions. For example you might call a third-party API to generate an image based on a user prompt and then store that image in R2.
 
