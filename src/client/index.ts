@@ -37,7 +37,6 @@ import {
 } from "../shared";
 import { DataModel, Id } from "../component/_generated/dataModel";
 
-// Note: this value is hard-coded in the docstring below. Please keep in sync.
 export const DEFAULT_BATCH_SIZE = 10;
 
 export class R2 {

@@ -2,8 +2,6 @@
 
 [![npm version](https://badge.fury.io/js/@convex-dev%2Fr2.svg)](https://badge.fury.io/js/@convex-dev%2Fr2)
 
-**Note: Convex Components are currently in beta.**
-
 <!-- START: Include on https://convex.dev/components -->
 
 Store and serve files with Cloudflare R2.
@@ -474,6 +472,7 @@ export const getMetadata = query({
     return await r2.getMetadata(args.key);
   },
 });
+```
 
 This is an example of the returned document:
 
