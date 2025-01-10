@@ -1,11 +1,11 @@
 import {
   ActionBuilder,
-  createFunctionHandle,
   Expand,
   FunctionHandle,
   FunctionReference,
   GenericActionCtx,
   GenericDataModel,
+  GenericMutationCtx,
   httpActionGeneric,
   HttpRouter,
   internalActionGeneric,
@@ -27,14 +27,7 @@ import {
 } from "@aws-sdk/client-s3";
 import { S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import {
-  createR2Client,
-  DeleteArgs,
-  ListArgs,
-  ListResult,
-  r2ConfigValidator,
-  UploadArgs,
-} from "../shared";
+import { createR2Client, r2ConfigValidator } from "../shared";
 import { DataModel, Id } from "../component/_generated/dataModel";
 
 export const DEFAULT_BATCH_SIZE = 10;
@@ -210,32 +203,6 @@ export class R2 {
       Promise<void>
     >;
   }
-  async exportConvexFilesToR2<T extends DataModel>(
-    ctx: GenericActionCtx<T>,
-    {
-      listFn,
-      uploadFn,
-      nextFn,
-      deleteFn,
-      batchSize,
-    }: {
-      listFn: FunctionReference<"query", "internal", ListArgs, ListResult>;
-      uploadFn: FunctionReference<"action", "internal", UploadArgs>;
-      deleteFn: FunctionReference<"mutation", "internal", DeleteArgs>;
-      nextFn: FunctionReference<"action", "internal">;
-      batchSize?: number;
-    }
-  ) {
-    return await ctx.runAction(this.component.lib.exportConvexFilesToR2, {
-      ...this.r2Config,
-      listFn: await createFunctionHandle(listFn),
-      uploadFn: await createFunctionHandle(uploadFn),
-      nextFn: await createFunctionHandle(nextFn),
-      deleteFn: await createFunctionHandle(deleteFn),
-      batchSize:
-        batchSize ?? this.options?.defaultBatchSize ?? DEFAULT_BATCH_SIZE,
-    });
-  }
   registerRoutes(
     http: HttpRouter,
     {
@@ -296,6 +263,9 @@ export class R2 {
 /* Type utils follow */
 type RunActionCtx = {
   runAction: GenericActionCtx<GenericDataModel>["runAction"];
+};
+type RunMutationCtx = {
+  runMutation: GenericMutationCtx<GenericDataModel>["runMutation"];
 };
 
 export type OpaqueIds<T> =

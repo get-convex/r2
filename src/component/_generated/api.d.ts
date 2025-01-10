@@ -40,24 +40,8 @@ export type Mounts = {
       },
       any
     >;
-    exportConvexFilesToR2: FunctionReference<
-      "action",
-      "public",
-      {
-        accessKeyId: string;
-        batchSize?: number;
-        bucket: string;
-        deleteFn: string;
-        endpoint: string;
-        listFn: string;
-        nextFn: string;
-        secretAccessKey: string;
-        uploadFn: string;
-      },
-      any
-    >;
     generateUploadUrl: FunctionReference<
-      "action",
+      "mutation",
       "public",
       {
         accessKeyId: string;

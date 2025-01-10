@@ -14,18 +14,6 @@ export const listConvexFiles = r2.listConvexFiles();
 export const uploadFile = r2.uploadFile();
 export const deleteFile = r2.deleteFile();
 
-export const exportConvexFilesToR2 = internalAction({
-  handler: async (ctx) => {
-    await r2.exportConvexFilesToR2(ctx, {
-      listFn: internal.example.listConvexFiles,
-      uploadFn: internal.example.uploadFile,
-      nextFn: internal.example.exportConvexFilesToR2,
-      deleteFn: internal.example.deleteFile,
-      batchSize: 10,
-    });
-  },
-});
-
 export const generateUploadUrl = action(() => {
   return r2.generateUploadUrl();
 });

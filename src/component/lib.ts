@@ -1,4 +1,4 @@
-import { action, query } from "./_generated/server";
+import { action, mutation, query } from "./_generated/server";
 import {
   DeleteObjectCommand,
   GetObjectCommand,
@@ -7,21 +7,13 @@ import {
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { v } from "convex/values";
-import {
-  r2ConfigValidator,
-  createR2Client,
-  exportArgs,
-  ListArgs,
-  ListResult,
-  UploadArgs,
-} from "../shared";
-import { FunctionHandle } from "convex/server";
+import { r2ConfigValidator, createR2Client } from "../shared";
 
-export const generateUploadUrl = action({
+export const generateUploadUrl = mutation({
   args: {
     ...r2ConfigValidator.fields,
   },
-  handler: async (ctx, args) => {
+  handler: async (_ctx, args) => {
     const r2 = createR2Client(args);
     const key = crypto.randomUUID();
     const url = await getSignedUrl(
@@ -103,27 +95,5 @@ export const getMetadata = action({
       ContentLength: response.ContentLength,
       LastModified: response.LastModified?.toISOString(),
     };
-  },
-});
-
-export const exportConvexFilesToR2 = action({
-  args: exportArgs,
-  handler: async (ctx, args) => {
-    const files = await ctx.runQuery(
-      args.listFn as FunctionHandle<"query", ListArgs, ListResult>,
-      { batchSize: args.batchSize }
-    );
-    if (files.length === 0) {
-      return;
-    }
-    await ctx.runAction(args.uploadFn as FunctionHandle<"action", UploadArgs>, {
-      files,
-      deleteFn: args.deleteFn,
-    });
-    await ctx.scheduler.runAfter(
-      0,
-      args.nextFn as FunctionHandle<"action", typeof args>,
-      args
-    );
   },
 });

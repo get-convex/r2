@@ -57,11 +57,11 @@ export default app;
 Set your API credentials using the values you recorded earlier:
 
 ```sh
-npx convex env set R2_TOKEN=xxxxx
-npx convex env set R2_ACCESS_KEY_ID=xxxxx
-npx convex env set R2_SECRET_ACCESS_KEY=xxxxx
-npx convex env set R2_ENDPOINT=xxxxx
-npx convex env set R2_BUCKET=xxxxx
+npx convex env set R2_TOKEN xxxxx
+npx convex env set R2_ACCESS_KEY_ID xxxxx
+npx convex env set R2_SECRET_ACCESS_KEY xxxxx
+npx convex env set R2_ENDPOINT xxxxx
+npx convex env set R2_BUCKET xxxxx
 ```
 
 Instantiate a R2 Component client in a file in your app's `convex/` folder:

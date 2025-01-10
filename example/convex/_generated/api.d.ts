@@ -54,24 +54,8 @@ export declare const components: {
         },
         any
       >;
-      exportConvexFilesToR2: FunctionReference<
-        "action",
-        "internal",
-        {
-          accessKeyId: string;
-          batchSize?: number;
-          bucket: string;
-          deleteFn: string;
-          endpoint: string;
-          listFn: string;
-          nextFn: string;
-          secretAccessKey: string;
-          uploadFn: string;
-        },
-        any
-      >;
       generateUploadUrl: FunctionReference<
-        "action",
+        "mutation",
         "internal",
         {
           accessKeyId: string;
