@@ -42,6 +42,12 @@ export declare const internal: FilterApi<
 export declare const components: {
   r2: {
     lib: {
+      deleteMetadata: FunctionReference<
+        "mutation",
+        "internal",
+        { key: string },
+        any
+      >;
       deleteObject: FunctionReference<
         "action",
         "internal",
@@ -89,6 +95,18 @@ export declare const components: {
         },
         any
       >;
+      insertMetadata: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          bucket: string;
+          contentType: string;
+          key: string;
+          sha256: string;
+          size: number;
+        },
+        any
+      >;
       store: FunctionReference<
         "action",
         "internal",
@@ -98,6 +116,18 @@ export declare const components: {
           endpoint: string;
           secretAccessKey: string;
           url: string;
+        },
+        any
+      >;
+      syncMetadata: FunctionReference<
+        "action",
+        "internal",
+        {
+          accessKeyId: string;
+          bucket: string;
+          endpoint: string;
+          key: string;
+          secretAccessKey: string;
         },
         any
       >;

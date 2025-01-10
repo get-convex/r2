@@ -18,6 +18,13 @@ export const generateUploadUrl = action(() => {
   return r2.generateUploadUrl();
 });
 
+export const syncMetadata = action({
+  args: { key: v.string() },
+  handler: async (ctx, args) => {
+    await r2.syncMetadata(ctx, args.key);
+  },
+});
+
 export const getRecentImages = query({
   args: {},
   handler: async (ctx) => {

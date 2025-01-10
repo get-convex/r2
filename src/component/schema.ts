@@ -2,7 +2,7 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 export default defineSchema({
-  images: defineTable({
+  metadata: defineTable({
     key: v.string(),
     sha256: v.string(),
     contentType: v.string(),

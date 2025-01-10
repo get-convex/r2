@@ -65,6 +65,12 @@ export class R2 {
     );
     return { key, url };
   }
+  async syncMetadata(ctx: RunActionCtx, key: string) {
+    return await ctx.runAction(this.component.lib.syncMetadata, {
+      key,
+      ...this.r2Config,
+    });
+  }
   async store(ctx: RunActionCtx, url: string) {
     return await ctx.runAction(this.component.lib.store, {
       url,
@@ -263,9 +269,6 @@ export class R2 {
 /* Type utils follow */
 type RunActionCtx = {
   runAction: GenericActionCtx<GenericDataModel>["runAction"];
-};
-type RunMutationCtx = {
-  runMutation: GenericMutationCtx<GenericDataModel>["runMutation"];
 };
 
 export type OpaqueIds<T> =

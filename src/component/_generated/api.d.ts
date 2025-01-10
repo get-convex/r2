@@ -28,6 +28,12 @@ declare const fullApi: ApiFromModules<{
 }>;
 export type Mounts = {
   lib: {
+    deleteMetadata: FunctionReference<
+      "mutation",
+      "public",
+      { key: string },
+      any
+    >;
     deleteObject: FunctionReference<
       "action",
       "public",
@@ -75,6 +81,18 @@ export type Mounts = {
       },
       any
     >;
+    insertMetadata: FunctionReference<
+      "mutation",
+      "public",
+      {
+        bucket: string;
+        contentType: string;
+        key: string;
+        sha256: string;
+        size: number;
+      },
+      any
+    >;
     store: FunctionReference<
       "action",
       "public",
@@ -84,6 +102,18 @@ export type Mounts = {
         endpoint: string;
         secretAccessKey: string;
         url: string;
+      },
+      any
+    >;
+    syncMetadata: FunctionReference<
+      "action",
+      "public",
+      {
+        accessKeyId: string;
+        bucket: string;
+        endpoint: string;
+        key: string;
+        secretAccessKey: string;
       },
       any
     >;

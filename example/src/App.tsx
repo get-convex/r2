@@ -4,13 +4,18 @@ import { FormEvent, useRef, useState } from "react";
 import { api } from "../convex/_generated/api";
 
 // Set to true to use HTTP Action instead of signed URL
-const GET_VIA_HTTP = true;
-const SEND_VIA_HTTP = true;
+const GET_VIA_HTTP = false;
+const SEND_VIA_HTTP = false;
+const convexSiteUrl = (import.meta.env.VITE_CONVEX_URL as string).replace(
+  ".cloud",
+  ".site"
+);
 
 export function App() {
   const generateUploadUrl = useAction(api.example.generateUploadUrl);
   const sendImage = useMutation(api.example.sendImage);
   const deleteImage = useAction(api.example.deleteImage);
+  const syncMetadata = useAction(api.example.syncMetadata);
   const images = useQuery(api.example.getRecentImages);
   const imageInput = useRef<HTMLInputElement>(null);
   const [sending, setSending] = useState(false);
@@ -39,6 +44,7 @@ export function App() {
       throw new Error(`Failed to upload image: ${error}`);
     }
     // Step 3: Save the newly allocated storage id to the database
+    await syncMetadata({ key });
     await sendImage({ key, author: name });
     setSending(false);
     setSelectedImage(null);
@@ -51,7 +57,7 @@ export function App() {
 
     const sendImageUrl = new URL(
       // Use Convex Action URL
-      "https://giant-kangaroo-636.convex.site/r2/send"
+      `${convexSiteUrl}/r2/send`
     );
     sendImageUrl.searchParams.set("author", name);
 
