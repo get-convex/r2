@@ -2,20 +2,12 @@ import "./App.css";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { FormEvent, useRef, useState } from "react";
 import { api } from "../convex/_generated/api";
-
-// Set to true to use HTTP Action instead of signed URL
-const GET_VIA_HTTP = false;
-const SEND_VIA_HTTP = false;
-const convexSiteUrl = (import.meta.env.VITE_CONVEX_URL as string).replace(
-  ".cloud",
-  ".site"
-);
+import { useUploadFile } from "@convex-dev/r2/react";
 
 export function App() {
-  const generateUploadUrl = useAction(api.example.generateUploadUrl);
+  const uploadFile = useUploadFile(api.example);
   const sendImage = useMutation(api.example.sendImage);
   const deleteImage = useAction(api.example.deleteImage);
-  const syncMetadata = useAction(api.example.syncMetadata);
   const images = useQuery(api.example.getRecentImages);
   const imageInput = useRef<HTMLInputElement>(null);
   const [sending, setSending] = useState(false);
@@ -23,59 +15,11 @@ export function App() {
 
   const [name] = useState(() => "User " + Math.floor(Math.random() * 10000));
 
-  async function handleSendImageViaSignedUrl(event: FormEvent) {
+  async function handleSendImage(event: FormEvent) {
     event.preventDefault();
     setSending(true);
-    // Step 1: Get a short-lived upload URL
-    const { url, key } = await generateUploadUrl();
-    // Step 2: PUT the file to the URL
-    try {
-      const result = await fetch(url, {
-        method: "PUT",
-        headers: { "Content-Type": selectedImage!.type },
-        body: selectedImage,
-      });
-      if (!result.ok) {
-        setSending(false);
-        throw new Error(`Failed to upload image: ${result.statusText}`);
-      }
-    } catch (error) {
-      setSending(false);
-      throw new Error(`Failed to upload image: ${error}`);
-    }
-    // Step 3: Save the newly allocated storage id to the database
-    await syncMetadata({ key });
+    const key = await uploadFile(selectedImage!);
     await sendImage({ key, author: name });
-    setSending(false);
-    setSelectedImage(null);
-    imageInput.current!.value = "";
-  }
-
-  async function handleSendImageViaHttp(event: FormEvent) {
-    event.preventDefault();
-    setSending(true);
-
-    const sendImageUrl = new URL(
-      // Use Convex Action URL
-      `${convexSiteUrl}/r2/send`
-    );
-    sendImageUrl.searchParams.set("author", name);
-
-    try {
-      const result = await fetch(sendImageUrl, {
-        method: "POST",
-        headers: { "Content-Type": selectedImage!.type },
-        body: selectedImage,
-      });
-      if (!result.ok) {
-        setSending(false);
-        throw new Error(`Failed to upload image: ${result.statusText}`);
-      }
-    } catch (error) {
-      setSending(false);
-      throw new Error(`Failed to upload image: ${error}`);
-    }
-
     setSending(false);
     setSelectedImage(null);
     imageInput.current!.value = "";
@@ -85,11 +29,7 @@ export function App() {
     <>
       <h1>Convex R2 Component Example</h1>
       <div className="card">
-        <form
-          onSubmit={
-            SEND_VIA_HTTP ? handleSendImageViaHttp : handleSendImageViaSignedUrl
-          }
-        >
+        <form onSubmit={handleSendImage}>
           <input
             type="file"
             accept="image/*"
@@ -107,15 +47,7 @@ export function App() {
           {images?.map((image) => (
             <div key={image._id} className="image-row">
               <p>{image.author}</p>
-              <img
-                src={
-                  GET_VIA_HTTP
-                    ? `https://giant-kangaroo-636.convex.site/r2/get/${image.key}`
-                    : image.url
-                }
-                alt={image.author}
-                width={80}
-              />
+              <img src={image.url} alt={image.author} width={80} />
               <button onClick={() => deleteImage({ key: image.key })}>
                 Delete
               </button>

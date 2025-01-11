@@ -9,7 +9,6 @@
  */
 
 import type * as example from "../example.js";
-import type * as http from "../http.js";
 
 import type {
   ApiFromModules,
@@ -26,7 +25,6 @@ import type {
  */
 declare const fullApi: ApiFromModules<{
   example: typeof example;
-  http: typeof http;
 }>;
 declare const fullApiWithMounts: typeof fullApi;
 
@@ -60,41 +58,7 @@ export declare const components: {
         },
         any
       >;
-      generateUploadUrl: FunctionReference<
-        "mutation",
-        "internal",
-        {
-          accessKeyId: string;
-          bucket: string;
-          endpoint: string;
-          secretAccessKey: string;
-        },
-        any
-      >;
-      getMetadata: FunctionReference<
-        "action",
-        "internal",
-        {
-          accessKeyId: string;
-          bucket: string;
-          endpoint: string;
-          key: string;
-          secretAccessKey: string;
-        },
-        any
-      >;
-      getUrl: FunctionReference<
-        "query",
-        "internal",
-        {
-          accessKeyId: string;
-          bucket: string;
-          endpoint: string;
-          key: string;
-          secretAccessKey: string;
-        },
-        any
-      >;
+      getMetadata: FunctionReference<"query", "internal", { key: string }, any>;
       insertMetadata: FunctionReference<
         "mutation",
         "internal",
@@ -104,18 +68,6 @@ export declare const components: {
           key: string;
           sha256: string;
           size: number;
-        },
-        any
-      >;
-      store: FunctionReference<
-        "action",
-        "internal",
-        {
-          accessKeyId: string;
-          bucket: string;
-          endpoint: string;
-          secretAccessKey: string;
-          url: string;
         },
         any
       >;
@@ -129,7 +81,7 @@ export declare const components: {
           key: string;
           secretAccessKey: string;
         },
-        any
+        null
       >;
     };
   };

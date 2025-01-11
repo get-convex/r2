@@ -46,41 +46,7 @@ export type Mounts = {
       },
       any
     >;
-    generateUploadUrl: FunctionReference<
-      "mutation",
-      "public",
-      {
-        accessKeyId: string;
-        bucket: string;
-        endpoint: string;
-        secretAccessKey: string;
-      },
-      any
-    >;
-    getMetadata: FunctionReference<
-      "action",
-      "public",
-      {
-        accessKeyId: string;
-        bucket: string;
-        endpoint: string;
-        key: string;
-        secretAccessKey: string;
-      },
-      any
-    >;
-    getUrl: FunctionReference<
-      "query",
-      "public",
-      {
-        accessKeyId: string;
-        bucket: string;
-        endpoint: string;
-        key: string;
-        secretAccessKey: string;
-      },
-      any
-    >;
+    getMetadata: FunctionReference<"query", "public", { key: string }, any>;
     insertMetadata: FunctionReference<
       "mutation",
       "public",
@@ -90,18 +56,6 @@ export type Mounts = {
         key: string;
         sha256: string;
         size: number;
-      },
-      any
-    >;
-    store: FunctionReference<
-      "action",
-      "public",
-      {
-        accessKeyId: string;
-        bucket: string;
-        endpoint: string;
-        secretAccessKey: string;
-        url: string;
       },
       any
     >;
@@ -115,7 +69,7 @@ export type Mounts = {
         key: string;
         secretAccessKey: string;
       },
-      any
+      null
     >;
   };
 };

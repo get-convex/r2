@@ -1,42 +1,31 @@
 import {
-  ActionBuilder,
+  actionGeneric,
+  ApiFromModules,
   Expand,
-  FunctionHandle,
   FunctionReference,
   GenericActionCtx,
   GenericDataModel,
-  GenericMutationCtx,
-  httpActionGeneric,
-  HttpRouter,
-  internalActionGeneric,
-  internalMutationGeneric,
-  internalQueryGeneric,
-  MutationBuilder,
-  QueryBuilder,
-  RegisteredAction,
-  RegisteredMutation,
-  RegisteredQuery,
+  GenericQueryCtx,
+  mutationGeneric,
 } from "convex/server";
 import { GenericId, Infer, v } from "convex/values";
-import { corsRouter } from "convex-helpers/server/cors";
-import { api } from "../component/_generated/api";
-import {
-  GetObjectCommand,
-  HeadObjectCommand,
-  PutObjectCommand,
-} from "@aws-sdk/client-s3";
+import { Mounts } from "../component/_generated/api";
+import { GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { createR2Client, r2ConfigValidator } from "../shared";
-import { DataModel, Id } from "../component/_generated/dataModel";
 
 export const DEFAULT_BATCH_SIZE = 10;
+
+export type Api = ApiFromModules<{
+  api: ReturnType<R2["api"]>;
+}>["api"];
 
 export class R2 {
   public readonly r2Config: Infer<typeof r2ConfigValidator>;
   public readonly r2: S3Client;
   constructor(
-    public component: UseApi<typeof api>,
+    public component: UseApi<Mounts>,
     public options: {
       R2_BUCKET?: string;
       R2_ENDPOINT?: string;
@@ -54,26 +43,9 @@ export class R2 {
     };
     this.r2 = createR2Client(this.r2Config);
   }
-  async generateUploadUrl() {
-    const key = crypto.randomUUID();
-    const url = await getSignedUrl(
-      this.r2,
-      new PutObjectCommand({
-        Bucket: this.r2Config.bucket,
-        Key: key,
-      })
-    );
-    return { key, url };
-  }
   async syncMetadata(ctx: RunActionCtx, key: string) {
     return await ctx.runAction(this.component.lib.syncMetadata, {
       key,
-      ...this.r2Config,
-    });
-  }
-  async store(ctx: RunActionCtx, url: string) {
-    return await ctx.runAction(this.component.lib.store, {
-      url,
       ...this.r2Config,
     });
   }
@@ -92,183 +64,53 @@ export class R2 {
       ...this.r2Config,
     });
   }
-  async getMetadata(ctx: RunActionCtx, key: string) {
-    return await ctx.runAction(this.component.lib.getMetadata, {
+  async getMetadata(ctx: RunQueryCtx, key: string) {
+    return await ctx.runQuery(this.component.lib.getMetadata, {
       key,
-      ...this.r2Config,
     });
   }
-  listConvexFiles({
-    batchSize: functionDefaultBatchSize,
-  }: {
-    batchSize?: number;
-  } = {}) {
-    const defaultBatchSize =
-      functionDefaultBatchSize ??
-      this.options?.defaultBatchSize ??
-      DEFAULT_BATCH_SIZE;
-    return (internalQueryGeneric as QueryBuilder<DataModel, "internal">)({
-      args: {
-        batchSize: v.optional(v.number()),
-      },
-      handler: async (ctx, args) => {
-        const numItems = args.batchSize || defaultBatchSize;
-        if (args.batchSize === 0) {
-          console.warn(`Batch size is zero. Using the default: ${numItems}\n`);
-        }
-        return await ctx.db.system.query("_storage").take(numItems);
-      },
-    }) satisfies RegisteredQuery<
-      "internal",
-      { batchSize: number },
-      Promise<
-        {
-          _id: Id<"_storage">;
-          _creationTime: number;
-          contentType?: string | undefined;
-          sha256: string;
-          size: number;
-        }[]
-      >
-    >;
-  }
-  uploadFile() {
-    return (internalActionGeneric as ActionBuilder<DataModel, "internal">)({
-      args: {
-        files: v.array(
-          v.object({
-            _id: v.id("_storage"),
-            _creationTime: v.number(),
-            contentType: v.optional(v.string()),
-            sha256: v.string(),
-            size: v.number(),
-          })
-        ),
-        deleteFn: v.string(),
-      },
-      handler: async (ctx, args) => {
-        const deleteFn = args.deleteFn as FunctionHandle<
-          "mutation",
-          { fileId: Id<"_storage"> },
-          void
-        >;
-        await Promise.all(
-          args.files.map(async (file) => {
-            const blob = await ctx.storage.get(file._id);
-            if (!blob) {
-              return;
-            }
-            await this.r2.send(
-              new PutObjectCommand({
-                Bucket: this.r2Config.bucket,
-                Key: file._id,
-                Body: blob,
-                ContentType: file.contentType ?? undefined,
-                ChecksumSHA256: file.sha256,
-              })
-            );
-            const metadata = await this.r2.send(
-              new HeadObjectCommand({
-                Bucket: this.r2Config.bucket,
-                Key: file._id,
-              })
-            );
-            if (metadata.ChecksumSHA256 !== file.sha256) {
-              throw new Error("Checksum mismatch");
-            }
-            await ctx.runMutation(deleteFn, { fileId: file._id });
-          })
-        );
-      },
-    }) satisfies RegisteredAction<
-      "internal",
-      {
-        files: {
-          contentType?: string | undefined;
-          sha256: string;
-          size: number;
-          _creationTime: number;
-          _id: Id<"_storage">;
-        }[];
-        deleteFn: string;
-      },
-      Promise<void>
-    >;
-  }
-  deleteFile() {
-    return (internalMutationGeneric as MutationBuilder<DataModel, "internal">)({
-      args: {
-        fileId: v.id("_storage"),
-      },
-      handler: async (ctx, args) => {
-        await ctx.storage.delete(args.fileId);
-      },
-    }) satisfies RegisteredMutation<
-      "internal",
-      { fileId: Id<"_storage"> },
-      Promise<void>
-    >;
-  }
-  registerRoutes(
-    http: HttpRouter,
-    {
-      pathPrefix = "/r2",
-      onSend,
-    }: {
-      onSend?: FunctionReference<
-        "mutation",
-        "internal",
-        { key: string; requestUrl: string }
-      >;
-      pathPrefix?: string;
-    } = {}
-  ) {
-    const cors = corsRouter(http);
-    cors.route({
-      pathPrefix: `${pathPrefix}/get/`,
-      method: "GET",
-      handler: httpActionGeneric(async (_ctx, request) => {
-        const { pathname } = new URL(request.url);
-        const key = pathname.split("/").pop()!;
-        const command = new GetObjectCommand({
-          Bucket: this.r2Config.bucket,
-          Key: key,
-        });
-        const response = await this.r2.send(command);
-
-        if (!response.Body) {
-          return new Response("Image not found", {
-            status: 404,
+  api() {
+    return {
+      generateUploadUrl: mutationGeneric({
+        args: {},
+        returns: v.object({
+          key: v.string(),
+          url: v.string(),
+        }),
+        handler: async () => {
+          const key = crypto.randomUUID();
+          const url = await getSignedUrl(
+            this.r2,
+            new PutObjectCommand({
+              Bucket: this.r2Config.bucket,
+              Key: key,
+            })
+          );
+          return { key, url };
+        },
+      }),
+      syncMetadata: actionGeneric({
+        args: {
+          key: v.string(),
+        },
+        returns: v.null(),
+        handler: async (ctx, args) => {
+          await ctx.runAction(this.component.lib.syncMetadata, {
+            key: args.key,
+            ...this.r2Config,
           });
-        }
-        return new Response(await response.Body.transformToByteArray());
+        },
       }),
-    });
-    cors.route({
-      path: `${pathPrefix}/send`,
-      method: "POST",
-      handler: httpActionGeneric(async (ctx, request) => {
-        const blob = await request.blob();
-        const key = crypto.randomUUID();
-        const command = new PutObjectCommand({
-          Bucket: this.r2Config.bucket,
-          Key: key,
-          Body: blob,
-          ContentType: request.headers.get("Content-Type") ?? undefined,
-        });
-        await this.r2.send(command);
-        if (onSend) {
-          await ctx.runMutation(onSend, { key, requestUrl: request.url });
-        }
-        return new Response(null);
-      }),
-    });
+    };
   }
 }
 
 /* Type utils follow */
 type RunActionCtx = {
   runAction: GenericActionCtx<GenericDataModel>["runAction"];
+};
+type RunQueryCtx = {
+  runQuery: GenericQueryCtx<GenericDataModel>["runQuery"];
 };
 
 export type OpaqueIds<T> =

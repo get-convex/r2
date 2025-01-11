@@ -67,11 +67,13 @@
     }
   },
   "peerDependencies": {
-    "convex": "~1.16.5 || ~1.17.0"
+    "convex": "~1.16.5 || ~1.17.0",
+    "react": "^18.3.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.1",
     "@types/node": "^18.17.0",
+    "@types/react": "^18.3.3",
     "convex-test": "^0.0.33",
     "eslint": "^9.9.1",
     "globals": "^15.9.0",
