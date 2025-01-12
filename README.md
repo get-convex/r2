@@ -222,4 +222,34 @@ The returned document has the following fields:
 - `ContentLength`: the size of the file in bytes
 - `LastModified`: the last modified date of the file
 
+
+### Listing and paginating metadata
+
+Metadata can be listed or paginated from actions via `r2.listMetadata` and `r2.pageMetadata`.
+
+```ts
+// convex/example.ts
+import { query } from "./_generated/server";
+import { R2 } from "@convex-dev/r2";
+
+const r2 = new R2(components.r2);
+
+export const list = query({
+  args: {
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    return r2.listMetadata(ctx, args.limit);
+  },
+});
+
+export const page = query({
+  args: {
+    paginationOpts: paginationOptsValidator,
+  },
+  handler: async (ctx, args) => {
+    return r2.pageMetadata(ctx, args.paginationOpts);
+  },
+});
+
 <!-- END: Include on https://convex.dev/components -->

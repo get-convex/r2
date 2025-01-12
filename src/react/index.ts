@@ -1,14 +1,24 @@
 import { useMutation } from "convex/react";
 import { useCallback } from "react";
-import { Api } from "../client";
+import { ClientApi } from "../client";
 
+/**
+ * A hook that allows you to upload a file to R2.
+ *
+ * This hook can be used as is, or copied into your own code for customization
+ * and tighter control.
+ *
+ * @param api - The client API object from the R2 component, including at least
+ * `generateUploadUrl` and `syncMetadata`.
+ * @returns A function that uploads a file to R2.
+ */
 export function useUploadFile(
-  api: Pick<Api, "generateUploadUrl" | "syncMetadata">
+  api: Pick<ClientApi, "generateUploadUrl" | "syncMetadata">
 ) {
   const generateUploadUrl = useMutation(api.generateUploadUrl);
   const syncMetadata = useMutation(api.syncMetadata);
 
-  const upload = useCallback(
+  return useCallback(
     async (file: File) => {
       const { url, key } = await generateUploadUrl();
       try {
@@ -28,5 +38,4 @@ export function useUploadFile(
     },
     [generateUploadUrl, syncMetadata]
   );
-  return upload;
 }

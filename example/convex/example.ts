@@ -1,20 +1,36 @@
 import { v } from "convex/values";
-import {
-  action,
-  internalAction,
-  internalMutation,
-  mutation,
-  query,
-} from "./_generated/server";
+import { action, internalMutation, mutation, query } from "./_generated/server";
 import { components, internal } from "./_generated/api";
 import { R2 } from "@convex-dev/r2";
 import { DataModel } from "./_generated/dataModel";
 const r2 = new R2(components.r2);
 
-export const { generateUploadUrl, syncMetadata } = r2.api<DataModel>({
+export const {
+  generateUploadUrl,
+  syncMetadata,
+
+  // These aren't used in the example, but can be exported this way to utilize
+  // the permission check callbacks.
+  getMetadata,
+  listMetadata,
+  pageMetadata,
+  deleteObject,
+} = r2.clientApi<DataModel>({
+  checkReadKey: async (ctx, bucket, key) => {
+    // const user = await userFromAuth(ctx);
+    // ...validate that the user can read this key
+  },
+  checkReadBucket: async (ctx, bucket) => {
+    // const user = await userFromAuth(ctx);
+    // ...validate that the user can read this bucket
+  },
   checkUpload: async (ctx, bucket) => {
     // const user = await userFromAuth(ctx);
     // ...validate that the user can upload to this bucket
+  },
+  checkDelete: async (ctx, bucket, key) => {
+    // const user = await userFromAuth(ctx);
+    // ...validate that the user can delete this key
   },
 });
 
