@@ -31,43 +31,32 @@ export type Mounts = {
     deleteMetadata: FunctionReference<
       "mutation",
       "public",
-      { key: string },
-      any
+      { bucket: string; key: string },
+      null
     >;
-    deleteObject: FunctionReference<
-      "action",
+    getMetadata: FunctionReference<
+      "query",
       "public",
+      { bucket: string; key: string },
       {
-        accessKeyId: string;
+        _creationTime: number;
+        _id: string;
         bucket: string;
-        endpoint: string;
+        contentType?: string;
         key: string;
-        secretAccessKey: string;
-      },
-      any
+        sha256?: string;
+        size?: number;
+      } | null
     >;
-    getMetadata: FunctionReference<"query", "public", { key: string }, any>;
     insertMetadata: FunctionReference<
       "mutation",
       "public",
       {
         bucket: string;
-        contentType: string;
+        contentType?: string;
         key: string;
-        sha256: string;
-        size: number;
-      },
-      any
-    >;
-    syncMetadata: FunctionReference<
-      "action",
-      "public",
-      {
-        accessKeyId: string;
-        bucket: string;
-        endpoint: string;
-        key: string;
-        secretAccessKey: string;
+        sha256?: string;
+        size?: number;
       },
       null
     >;

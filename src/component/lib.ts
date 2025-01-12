@@ -1,17 +1,33 @@
-import { action, mutation, query } from "./_generated/server";
-import { DeleteObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
+import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { r2ConfigValidator, createR2Client } from "../shared";
-import { api } from "./_generated/api";
+import schema from "./schema";
 
-export const insertMetadata = mutation({
+export const getMetadata = query({
   args: {
     key: v.string(),
-    contentType: v.string(),
-    size: v.number(),
-    sha256: v.string(),
     bucket: v.string(),
   },
+  returns: v.union(
+    v.object({
+      _id: v.string(),
+      _creationTime: v.number(),
+      ...schema.tables.metadata.validator.fields,
+    }),
+    v.null()
+  ),
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("metadata")
+      .withIndex("bucket_key", (q) =>
+        q.eq("bucket", args.bucket).eq("key", args.key)
+      )
+      .unique();
+  },
+});
+
+export const insertMetadata = mutation({
+  args: schema.tables.metadata.validator,
+  returns: v.null(),
   handler: async (ctx, args) => {
     await ctx.db.insert("metadata", {
       key: args.key,
@@ -23,68 +39,21 @@ export const insertMetadata = mutation({
   },
 });
 
-export const syncMetadata = action({
+export const deleteMetadata = mutation({
   args: {
-    ...r2ConfigValidator.fields,
+    bucket: v.string(),
     key: v.string(),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const r2 = createR2Client(args);
-    const command = new HeadObjectCommand({
-      Bucket: args.bucket,
-      Key: args.key,
-    });
-    const response = await r2.send(command);
-    await ctx.scheduler.runAfter(0, api.lib.insertMetadata, {
-      key: args.key,
-      contentType: response.ContentType ?? "",
-      size: response.ContentLength ?? 0,
-      sha256: response.ChecksumSHA256 ?? "",
-      bucket: args.bucket,
-    });
-  },
-});
-
-export const deleteMetadata = mutation({
-  args: {
-    key: v.string(),
-  },
-  handler: async (ctx, args) => {
     const metadata = await ctx.db
       .query("metadata")
-      .withIndex("key", (q) => q.eq("key", args.key))
+      .withIndex("bucket_key", (q) =>
+        q.eq("bucket", args.bucket).eq("key", args.key)
+      )
       .unique();
     if (metadata) {
       await ctx.db.delete(metadata._id);
     }
-  },
-});
-
-export const deleteObject = action({
-  args: {
-    key: v.string(),
-    ...r2ConfigValidator.fields,
-  },
-  handler: async (ctx, args) => {
-    const r2 = createR2Client(args);
-    await r2.send(
-      new DeleteObjectCommand({ Bucket: args.bucket, Key: args.key })
-    );
-    await ctx.scheduler.runAfter(0, api.lib.deleteMetadata, {
-      key: args.key,
-    });
-  },
-});
-
-export const getMetadata = query({
-  args: {
-    key: v.string(),
-  },
-  handler: async (ctx, args) => {
-    return await ctx.db
-      .query("metadata")
-      .withIndex("key", (q) => q.eq("key", args.key))
-      .unique();
   },
 });

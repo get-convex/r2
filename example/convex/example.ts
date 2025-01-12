@@ -48,7 +48,7 @@ export const deleteImageRef = internalMutation({
 export const deleteImage = action({
   args: { key: v.string() },
   handler: async (ctx, args) => {
-    await r2.deleteByKey(ctx, args.key);
+    await r2.deleteObject(ctx, args.key);
     await ctx.runMutation(internal.example.deleteImageRef, args);
   },
 });

@@ -4,9 +4,9 @@ import { v } from "convex/values";
 export default defineSchema({
   metadata: defineTable({
     key: v.string(),
-    sha256: v.string(),
-    contentType: v.string(),
-    size: v.number(),
+    sha256: v.optional(v.string()),
+    contentType: v.optional(v.string()),
+    size: v.optional(v.number()),
     bucket: v.string(),
-  }).index("key", ["key"]),
+  }).index("bucket_key", ["bucket", "key"]),
 });

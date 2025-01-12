@@ -43,43 +43,32 @@ export declare const components: {
       deleteMetadata: FunctionReference<
         "mutation",
         "internal",
-        { key: string },
-        any
+        { bucket: string; key: string },
+        null
       >;
-      deleteObject: FunctionReference<
-        "action",
+      getMetadata: FunctionReference<
+        "query",
         "internal",
+        { bucket: string; key: string },
         {
-          accessKeyId: string;
+          _creationTime: number;
+          _id: string;
           bucket: string;
-          endpoint: string;
+          contentType?: string;
           key: string;
-          secretAccessKey: string;
-        },
-        any
+          sha256?: string;
+          size?: number;
+        } | null
       >;
-      getMetadata: FunctionReference<"query", "internal", { key: string }, any>;
       insertMetadata: FunctionReference<
         "mutation",
         "internal",
         {
           bucket: string;
-          contentType: string;
+          contentType?: string;
           key: string;
-          sha256: string;
-          size: number;
-        },
-        any
-      >;
-      syncMetadata: FunctionReference<
-        "action",
-        "internal",
-        {
-          accessKeyId: string;
-          bucket: string;
-          endpoint: string;
-          key: string;
-          secretAccessKey: string;
+          sha256?: string;
+          size?: number;
         },
         null
       >;

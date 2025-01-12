@@ -3,17 +3,23 @@ import {
   ApiFromModules,
   Expand,
   FunctionReference,
-  GenericActionCtx,
   GenericDataModel,
+  GenericMutationCtx,
   GenericQueryCtx,
-  mutationGeneric,
+  queryGeneric,
 } from "convex/server";
 import { GenericId, Infer, v } from "convex/values";
-import { Mounts } from "../component/_generated/api";
-import { GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import { api } from "../component/_generated/api";
+import {
+  DeleteObjectCommand,
+  GetObjectCommand,
+  HeadObjectCommand,
+  PutObjectCommand,
+} from "@aws-sdk/client-s3";
 import { S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { createR2Client, r2ConfigValidator } from "../shared";
+import schema from "../component/schema";
 
 export const DEFAULT_BATCH_SIZE = 10;
 
@@ -21,11 +27,19 @@ export type Api = ApiFromModules<{
   api: ReturnType<R2["api"]>;
 }>["api"];
 
+// e.g. `ctx` from a Convex mutation or action.
+export type RunQueryCtx = {
+  runQuery: GenericQueryCtx<GenericDataModel>["runQuery"];
+};
+export type RunMutationCtx = {
+  runMutation: GenericMutationCtx<GenericDataModel>["runMutation"];
+};
+
 export class R2 {
   public readonly r2Config: Infer<typeof r2ConfigValidator>;
   public readonly r2: S3Client;
   constructor(
-    public component: UseApi<Mounts>,
+    public component: UseApi<typeof api>,
     public options: {
       R2_BUCKET?: string;
       R2_ENDPOINT?: string;
@@ -43,51 +57,58 @@ export class R2 {
     };
     this.r2 = createR2Client(this.r2Config);
   }
-  async syncMetadata(ctx: RunActionCtx, key: string) {
-    return await ctx.runAction(this.component.lib.syncMetadata, {
-      key,
-      ...this.r2Config,
-    });
-  }
   async getUrl(key: string) {
     return await getSignedUrl(
       this.r2,
-      new GetObjectCommand({
-        Bucket: this.r2Config.bucket,
-        Key: key,
-      })
+      new GetObjectCommand({ Bucket: this.r2Config.bucket, Key: key })
     );
   }
-  async deleteByKey(ctx: RunActionCtx, key: string) {
-    await ctx.runAction(this.component.lib.deleteObject, {
-      key,
-      ...this.r2Config,
+  async generateUploadUrl() {
+    const key = crypto.randomUUID();
+    const url = await getSignedUrl(
+      this.r2,
+      new PutObjectCommand({ Bucket: this.r2Config.bucket, Key: key })
+    );
+    return { key, url };
+  }
+  async syncMetadata(ctx: RunMutationCtx, key: string) {
+    const command = new HeadObjectCommand({
+      Bucket: this.r2Config.bucket,
+      Key: key,
+    });
+    const response = await this.r2.send(command);
+    await ctx.runMutation(this.component.lib.insertMetadata, {
+      key: key,
+      bucket: this.r2Config.bucket,
+      contentType: response.ContentType,
+      size: response.ContentLength,
+      sha256: response.ChecksumSHA256,
     });
   }
   async getMetadata(ctx: RunQueryCtx, key: string) {
-    return await ctx.runQuery(this.component.lib.getMetadata, {
-      key,
+    return ctx.runQuery(this.component.lib.getMetadata, {
+      key: key,
+      bucket: this.r2Config.bucket,
+    });
+  }
+  async deleteObject(ctx: RunMutationCtx, key: string) {
+    await this.r2.send(
+      new DeleteObjectCommand({ Bucket: this.r2Config.bucket, Key: key })
+    );
+    await ctx.runMutation(this.component.lib.deleteMetadata, {
+      bucket: this.r2Config.bucket,
+      key: key,
     });
   }
   api() {
     return {
-      generateUploadUrl: mutationGeneric({
+      generateUploadUrl: actionGeneric({
         args: {},
         returns: v.object({
           key: v.string(),
           url: v.string(),
         }),
-        handler: async () => {
-          const key = crypto.randomUUID();
-          const url = await getSignedUrl(
-            this.r2,
-            new PutObjectCommand({
-              Bucket: this.r2Config.bucket,
-              Key: key,
-            })
-          );
-          return { key, url };
-        },
+        handler: () => this.generateUploadUrl(),
       }),
       syncMetadata: actionGeneric({
         args: {
@@ -95,10 +116,25 @@ export class R2 {
         },
         returns: v.null(),
         handler: async (ctx, args) => {
-          await ctx.runAction(this.component.lib.syncMetadata, {
-            key: args.key,
-            ...this.r2Config,
-          });
+          await this.syncMetadata(ctx, args.key);
+        },
+      }),
+      getMetadata: queryGeneric({
+        args: {
+          key: v.string(),
+        },
+        returns: v.union(schema.tables.metadata.validator, v.null()),
+        handler: async (ctx, args) => {
+          return this.getMetadata(ctx, args.key);
+        },
+      }),
+      deleteObject: actionGeneric({
+        args: {
+          key: v.string(),
+        },
+        returns: v.null(),
+        handler: async (ctx, args) => {
+          await this.deleteObject(ctx, args.key);
         },
       }),
     };
@@ -106,12 +142,6 @@ export class R2 {
 }
 
 /* Type utils follow */
-type RunActionCtx = {
-  runAction: GenericActionCtx<GenericDataModel>["runAction"];
-};
-type RunQueryCtx = {
-  runQuery: GenericQueryCtx<GenericDataModel>["runQuery"];
-};
 
 export type OpaqueIds<T> =
   T extends GenericId<infer _T>
