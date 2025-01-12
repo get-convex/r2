@@ -46,6 +46,18 @@ export declare const components: {
         { bucket: string; key: string },
         null
       >;
+      deleteObject: FunctionReference<
+        "action",
+        "internal",
+        {
+          accessKeyId: string;
+          bucket: string;
+          endpoint: string;
+          key: string;
+          secretAccessKey: string;
+        },
+        null
+      >;
       getMetadata: FunctionReference<
         "query",
         "internal",
@@ -69,6 +81,18 @@ export declare const components: {
           key: string;
           sha256?: string;
           size?: number;
+        },
+        null
+      >;
+      syncMetadata: FunctionReference<
+        "action",
+        "internal",
+        {
+          accessKeyId: string;
+          bucket: string;
+          endpoint: string;
+          key: string;
+          secretAccessKey: string;
         },
         null
       >;

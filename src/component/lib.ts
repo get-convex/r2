@@ -1,6 +1,9 @@
-import { mutation, query } from "./_generated/server";
+import { action, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import schema from "./schema";
+import { DeleteObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
+import { createR2Client, r2ConfigValidator } from "../shared";
+import { api } from "./_generated/api";
 
 export const getMetadata = query({
   args: {
@@ -39,10 +42,34 @@ export const insertMetadata = mutation({
   },
 });
 
+export const syncMetadata = action({
+  args: {
+    key: v.string(),
+    ...r2ConfigValidator.fields,
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const { key, ...r2Config } = args;
+    const r2 = createR2Client(r2Config);
+    const command = new HeadObjectCommand({
+      Bucket: r2Config.bucket,
+      Key: key,
+    });
+    const response = await r2.send(command);
+    await ctx.runMutation(api.lib.insertMetadata, {
+      key,
+      contentType: response.ContentType,
+      size: response.ContentLength,
+      sha256: response.ChecksumSHA256,
+      bucket: r2Config.bucket,
+    });
+  },
+});
+
 export const deleteMetadata = mutation({
   args: {
-    bucket: v.string(),
     key: v.string(),
+    bucket: v.string(),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -55,5 +82,27 @@ export const deleteMetadata = mutation({
     if (metadata) {
       await ctx.db.delete(metadata._id);
     }
+  },
+});
+
+export const deleteObject = action({
+  args: {
+    key: v.string(),
+    ...r2ConfigValidator.fields,
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const { key, ...r2Config } = args;
+    const r2 = createR2Client(r2Config);
+    await r2.send(
+      new DeleteObjectCommand({
+        Bucket: r2Config.bucket,
+        Key: key,
+      })
+    );
+    await ctx.runMutation(api.lib.deleteMetadata, {
+      key,
+      bucket: r2Config.bucket,
+    });
   },
 });

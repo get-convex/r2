@@ -34,6 +34,18 @@ export type Mounts = {
       { bucket: string; key: string },
       null
     >;
+    deleteObject: FunctionReference<
+      "action",
+      "public",
+      {
+        accessKeyId: string;
+        bucket: string;
+        endpoint: string;
+        key: string;
+        secretAccessKey: string;
+      },
+      null
+    >;
     getMetadata: FunctionReference<
       "query",
       "public",
@@ -57,6 +69,18 @@ export type Mounts = {
         key: string;
         sha256?: string;
         size?: number;
+      },
+      null
+    >;
+    syncMetadata: FunctionReference<
+      "action",
+      "public",
+      {
+        accessKeyId: string;
+        bucket: string;
+        endpoint: string;
+        key: string;
+        secretAccessKey: string;
       },
       null
     >;

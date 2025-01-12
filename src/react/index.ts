@@ -1,12 +1,12 @@
-import { useAction } from "convex/react";
+import { useMutation } from "convex/react";
 import { useCallback } from "react";
 import { Api } from "../client";
 
 export function useUploadFile(
   api: Pick<Api, "generateUploadUrl" | "syncMetadata">
 ) {
-  const generateUploadUrl = useAction(api.generateUploadUrl);
-  const syncMetadata = useAction(api.syncMetadata);
+  const generateUploadUrl = useMutation(api.generateUploadUrl);
+  const syncMetadata = useMutation(api.syncMetadata);
 
   const upload = useCallback(
     async (file: File) => {

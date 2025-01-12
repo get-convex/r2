@@ -1,21 +1,16 @@
 import {
-  actionGeneric,
   ApiFromModules,
   Expand,
   FunctionReference,
+  GenericActionCtx,
   GenericDataModel,
-  GenericMutationCtx,
   GenericQueryCtx,
+  mutationGeneric,
   queryGeneric,
 } from "convex/server";
 import { GenericId, Infer, v } from "convex/values";
 import { api } from "../component/_generated/api";
-import {
-  DeleteObjectCommand,
-  GetObjectCommand,
-  HeadObjectCommand,
-  PutObjectCommand,
-} from "@aws-sdk/client-s3";
+import { GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { createR2Client, r2ConfigValidator } from "../shared";
@@ -28,11 +23,11 @@ export type Api = ApiFromModules<{
 }>["api"];
 
 // e.g. `ctx` from a Convex mutation or action.
-export type RunQueryCtx = {
+type RunQueryCtx = {
   runQuery: GenericQueryCtx<GenericDataModel>["runQuery"];
 };
-export type RunMutationCtx = {
-  runMutation: GenericMutationCtx<GenericDataModel>["runMutation"];
+type RunActionCtx = {
+  runAction: GenericActionCtx<GenericDataModel>["runAction"];
 };
 
 export class R2 {
@@ -71,18 +66,10 @@ export class R2 {
     );
     return { key, url };
   }
-  async syncMetadata(ctx: RunMutationCtx, key: string) {
-    const command = new HeadObjectCommand({
-      Bucket: this.r2Config.bucket,
-      Key: key,
-    });
-    const response = await this.r2.send(command);
-    await ctx.runMutation(this.component.lib.insertMetadata, {
+  async syncMetadata(ctx: RunActionCtx, key: string) {
+    await ctx.runAction(this.component.lib.syncMetadata, {
       key: key,
-      bucket: this.r2Config.bucket,
-      contentType: response.ContentType,
-      size: response.ContentLength,
-      sha256: response.ChecksumSHA256,
+      ...this.r2Config,
     });
   }
   async getMetadata(ctx: RunQueryCtx, key: string) {
@@ -91,32 +78,55 @@ export class R2 {
       bucket: this.r2Config.bucket,
     });
   }
-  async deleteObject(ctx: RunMutationCtx, key: string) {
-    await this.r2.send(
-      new DeleteObjectCommand({ Bucket: this.r2Config.bucket, Key: key })
-    );
-    await ctx.runMutation(this.component.lib.deleteMetadata, {
-      bucket: this.r2Config.bucket,
+  async deleteObject(ctx: RunActionCtx, key: string) {
+    await ctx.runAction(this.component.lib.deleteObject, {
       key: key,
+      ...this.r2Config,
     });
   }
-  api() {
+  api<DataModel extends GenericDataModel>(opts?: {
+    checkGet?: (
+      ctx: GenericQueryCtx<DataModel>,
+      bucket: string,
+      key: string
+    ) => void | Promise<void>;
+    checkUpload?: (
+      ctx: GenericQueryCtx<DataModel>,
+      bucket: string
+    ) => void | Promise<void>;
+    checkDelete?: (
+      ctx: GenericQueryCtx<DataModel>,
+      bucket: string,
+      key: string
+    ) => void | Promise<void>;
+  }) {
     return {
-      generateUploadUrl: actionGeneric({
+      generateUploadUrl: mutationGeneric({
         args: {},
         returns: v.object({
           key: v.string(),
           url: v.string(),
         }),
-        handler: () => this.generateUploadUrl(),
+        handler: async (ctx) => {
+          if (opts?.checkUpload) {
+            await opts.checkUpload(ctx, this.r2Config.bucket);
+          }
+          return this.generateUploadUrl();
+        },
       }),
-      syncMetadata: actionGeneric({
+      syncMetadata: mutationGeneric({
         args: {
           key: v.string(),
         },
         returns: v.null(),
         handler: async (ctx, args) => {
-          await this.syncMetadata(ctx, args.key);
+          if (opts?.checkUpload) {
+            await opts.checkUpload(ctx, this.r2Config.bucket);
+          }
+          await ctx.scheduler.runAfter(0, this.component.lib.syncMetadata, {
+            key: args.key,
+            ...this.r2Config,
+          });
         },
       }),
       getMetadata: queryGeneric({
@@ -125,16 +135,25 @@ export class R2 {
         },
         returns: v.union(schema.tables.metadata.validator, v.null()),
         handler: async (ctx, args) => {
+          if (opts?.checkGet) {
+            await opts.checkGet(ctx, this.r2Config.bucket, args.key);
+          }
           return this.getMetadata(ctx, args.key);
         },
       }),
-      deleteObject: actionGeneric({
+      deleteObject: mutationGeneric({
         args: {
           key: v.string(),
         },
         returns: v.null(),
         handler: async (ctx, args) => {
-          await this.deleteObject(ctx, args.key);
+          if (opts?.checkDelete) {
+            await opts.checkDelete(ctx, this.r2Config.bucket, args.key);
+          }
+          await ctx.scheduler.runAfter(0, this.component.lib.deleteObject, {
+            key: args.key,
+            ...this.r2Config,
+          });
         },
       }),
     };
