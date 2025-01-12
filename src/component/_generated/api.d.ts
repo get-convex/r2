@@ -72,6 +72,49 @@ export type Mounts = {
       },
       null
     >;
+    listMetadata: FunctionReference<
+      "query",
+      "public",
+      { bucket: string; limit?: number },
+      Array<{
+        _creationTime: number;
+        _id: string;
+        bucket: string;
+        contentType?: string;
+        key: string;
+        sha256?: string;
+        size?: number;
+      }>
+    >;
+    pageMetadata: FunctionReference<
+      "query",
+      "public",
+      {
+        bucket: string;
+        paginationOpts: {
+          cursor: string | null;
+          endCursor?: string | null;
+          id?: number;
+          maximumBytesRead?: number;
+          maximumRowsRead?: number;
+          numItems: number;
+        };
+      },
+      {
+        continueCursor: string;
+        isDone: boolean;
+        page: Array<{
+          _creationTime: number;
+          bucket: string;
+          contentType?: string;
+          key: string;
+          sha256?: string;
+          size?: number;
+        }>;
+        pageStatus?: null | "SplitRecommended" | "SplitRequired";
+        splitCursor?: null | string;
+      }
+    >;
     syncMetadata: FunctionReference<
       "action",
       "public",

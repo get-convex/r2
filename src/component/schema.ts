@@ -8,5 +8,7 @@ export default defineSchema({
     contentType: v.optional(v.string()),
     size: v.optional(v.number()),
     bucket: v.string(),
-  }).index("bucket_key", ["bucket", "key"]),
+  })
+    .index("bucket", ["bucket"])
+    .index("bucket_key", ["bucket", "key"]),
 });

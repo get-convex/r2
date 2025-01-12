@@ -6,6 +6,8 @@ import {
   GenericDataModel,
   GenericQueryCtx,
   mutationGeneric,
+  PaginationOptions,
+  paginationOptsValidator,
   queryGeneric,
 } from "convex/server";
 import { GenericId, Infer, v } from "convex/values";
@@ -13,7 +15,12 @@ import { api } from "../component/_generated/api";
 import { GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { createR2Client, r2ConfigValidator } from "../shared";
+import {
+  createR2Client,
+  paginationReturnValidator,
+  r2ConfigValidator,
+  withSystemFields,
+} from "../shared";
 import schema from "../component/schema";
 
 export const DEFAULT_BATCH_SIZE = 10;
@@ -72,10 +79,26 @@ export class R2 {
       ...this.r2Config,
     });
   }
-  async getMetadata(ctx: RunQueryCtx, key: string) {
+  async getMetadata(ctx: RunQueryCtx, bucket: string, key: string) {
     return ctx.runQuery(this.component.lib.getMetadata, {
       key: key,
-      bucket: this.r2Config.bucket,
+      bucket: bucket,
+    });
+  }
+  async listMetadata(ctx: RunQueryCtx, bucket: string, limit?: number) {
+    return ctx.runQuery(this.component.lib.listMetadata, {
+      bucket: bucket,
+      limit: limit,
+    });
+  }
+  async pageMetadata(
+    ctx: RunQueryCtx,
+    bucket: string,
+    paginationOpts: PaginationOptions
+  ) {
+    return ctx.runQuery(this.component.lib.pageMetadata, {
+      bucket,
+      paginationOpts,
     });
   }
   async deleteObject(ctx: RunActionCtx, key: string) {
@@ -85,10 +108,14 @@ export class R2 {
     });
   }
   api<DataModel extends GenericDataModel>(opts?: {
-    checkGet?: (
+    checkReadKey?: (
       ctx: GenericQueryCtx<DataModel>,
       bucket: string,
       key: string
+    ) => void | Promise<void>;
+    checkReadBucket?: (
+      ctx: GenericQueryCtx<DataModel>,
+      bucket: string
     ) => void | Promise<void>;
     checkUpload?: (
       ctx: GenericQueryCtx<DataModel>,
@@ -117,6 +144,7 @@ export class R2 {
       syncMetadata: mutationGeneric({
         args: {
           key: v.string(),
+          ...r2ConfigValidator.fields,
         },
         returns: v.null(),
         handler: async (ctx, args) => {
@@ -133,17 +161,56 @@ export class R2 {
         args: {
           key: v.string(),
         },
-        returns: v.union(schema.tables.metadata.validator, v.null()),
+        returns: v.union(
+          v.object(withSystemFields(schema.tables.metadata.validator.fields)),
+          v.null()
+        ),
         handler: async (ctx, args) => {
-          if (opts?.checkGet) {
-            await opts.checkGet(ctx, this.r2Config.bucket, args.key);
+          if (opts?.checkReadKey) {
+            await opts.checkReadKey(ctx, this.r2Config.bucket, args.key);
           }
-          return this.getMetadata(ctx, args.key);
+          return this.getMetadata(ctx, this.r2Config.bucket, args.key);
+        },
+      }),
+      listMetadata: queryGeneric({
+        args: {
+          limit: v.optional(v.number()),
+        },
+        returns: v.array(
+          v.object(withSystemFields(schema.tables.metadata.validator.fields))
+        ),
+        handler: async (ctx, args) => {
+          if (opts?.checkReadBucket) {
+            await opts.checkReadBucket(ctx, this.r2Config.bucket);
+          }
+          return this.listMetadata(ctx, this.r2Config.bucket, args.limit);
+        },
+      }),
+      pageMetadata: queryGeneric({
+        args: {
+          paginationOpts: paginationOptsValidator,
+        },
+        returns: paginationReturnValidator(
+          v.object({
+            _creationTime: v.number(),
+            ...schema.tables.metadata.validator.fields,
+          })
+        ),
+        handler: async (ctx, args) => {
+          if (opts?.checkReadBucket) {
+            await opts.checkReadBucket(ctx, this.r2Config.bucket);
+          }
+          return this.pageMetadata(
+            ctx,
+            this.r2Config.bucket,
+            args.paginationOpts
+          );
         },
       }),
       deleteObject: mutationGeneric({
         args: {
           key: v.string(),
+          ...r2ConfigValidator.fields,
         },
         returns: v.null(),
         handler: async (ctx, args) => {
