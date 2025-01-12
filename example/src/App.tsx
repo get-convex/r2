@@ -20,9 +20,9 @@ export function App() {
     setSending(true);
     const key = await uploadFile(selectedImage!);
     await sendImage({ key, author: name });
-    setSending(false);
     setSelectedImage(null);
     imageInput.current!.value = "";
+    setSending(false);
   }
 
   return (

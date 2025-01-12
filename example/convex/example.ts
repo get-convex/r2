@@ -12,20 +12,9 @@ import { DataModel } from "./_generated/dataModel";
 const r2 = new R2(components.r2);
 
 export const { generateUploadUrl, syncMetadata } = r2.api<DataModel>({
-  checkGet: async (ctx, bucket, key) => {
-    // const user = await userFromAuth(ctx);
-    // ...validate that the user can read this file
-  },
   checkUpload: async (ctx, bucket) => {
     // const user = await userFromAuth(ctx);
     // ...validate that the user can upload to this bucket
-  },
-  checkDelete: async (ctx, bucket, key) => {
-    console.log("checkDelete");
-    const images = await ctx.db.query("images").collect();
-    console.log(images);
-    // const user = await userFromAuth(ctx);
-    // ...validate that the user can delete this file
   },
 });
 
