@@ -4,6 +4,7 @@ import {
   FunctionReference,
   GenericActionCtx,
   GenericDataModel,
+  GenericMutationCtx,
   GenericQueryCtx,
   mutationGeneric,
   PaginationOptions,
@@ -201,7 +202,8 @@ export class R2 {
    * }
    * ```
    * @param opts - Optional callbacks.
-   * @returns functions to export, so the `useUploadFile` hook can use them.
+   * @returns functions to export, so the `useUploadFile` hook can use them, or
+   * for direct use in your own client code.
    */
   clientApi<DataModel extends GenericDataModel>(opts?: {
     checkReadKey?: (
@@ -220,6 +222,10 @@ export class R2 {
     checkDelete?: (
       ctx: GenericQueryCtx<DataModel>,
       bucket: string,
+      key: string
+    ) => void | Promise<void>;
+    onUpload?: (
+      ctx: GenericMutationCtx<DataModel>,
       key: string
     ) => void | Promise<void>;
   }) {
@@ -251,6 +257,9 @@ export class R2 {
         handler: async (ctx, args) => {
           if (opts?.checkUpload) {
             await opts.checkUpload(ctx, this.r2Config.bucket);
+          }
+          if (opts?.onUpload) {
+            await opts.onUpload(ctx, args.key);
           }
           await ctx.scheduler.runAfter(0, this.component.lib.syncMetadata, {
             key: args.key,
@@ -319,7 +328,6 @@ export class R2 {
       deleteObject: mutationGeneric({
         args: {
           key: v.string(),
-          ...r2ConfigValidator.fields,
         },
         returns: v.null(),
         handler: async (ctx, args) => {

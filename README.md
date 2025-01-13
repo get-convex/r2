@@ -80,7 +80,19 @@ import { components } from "./_generated/api";
 
 export const r2 = new R2(components.r2);
 
-export const { generateUploadUrl, syncMetadata } = r2.api();
+export const { generateUploadUrl, syncMetadata } = r2.clientApi({
+  checkUpload: async (ctx, bucket) => {
+    // const user = await userFromAuth(ctx);
+    // ...validate that the user can upload to this bucket
+  },
+  onUpload: async (ctx, key) => {
+    // ...do something with the key
+    // Runs in the `syncMetadata` mutation, as the upload is performed from the
+    // client side. Convenient way to create relations between the newly created
+    // object key and other data in your Convex database. Runs after the `checkUpload`
+    // callback.
+  },
+});
 ```
 
 2. Use the `useUploadFile` hook in a React component to upload files:
@@ -93,18 +105,24 @@ import { api } from "../convex/_generated/api";
 import { useUploadFile } from "@convex-dev/r2/react";
 
 export default function App() {
+
+  // Passing the entire api exported from `convex/example.ts` to the hook.
+  // This must include `generateUploadUrl` and `syncMetadata` from the r2 client api.
   const uploadFile = useUploadFile(api.example);
   const imageInput = useRef<HTMLInputElement>(null);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
 
   async function handleUpload(event: FormEvent) {
     event.preventDefault();
-    const key = await uploadFile(selectedImage!);
+
+    // The file is uploaded to R2, metadata is synced to the database, and the
+    // key of the newly created object is returned.
+    await uploadFile(selectedImage!);
     setSelectedImage(null);
     imageInput.current!.value = "";
   }
   return (
-    <form onSubmit={handleSendImage}>
+    <form onSubmit={handleUpload}>
       <input
         type="file"
         accept="image/*"

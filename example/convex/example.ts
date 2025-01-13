@@ -16,6 +16,12 @@ export const {
   pageMetadata,
   deleteObject,
 } = r2.clientApi<DataModel>({
+  // The checkUpload callback is used for both `generateUploadUrl` and
+  // `syncMetadata`.
+  checkUpload: async (ctx, bucket) => {
+    // const user = await userFromAuth(ctx);
+    // ...validate that the user can upload to this bucket
+  },
   checkReadKey: async (ctx, bucket, key) => {
     // const user = await userFromAuth(ctx);
     // ...validate that the user can read this key
@@ -24,13 +30,15 @@ export const {
     // const user = await userFromAuth(ctx);
     // ...validate that the user can read this bucket
   },
-  checkUpload: async (ctx, bucket) => {
-    // const user = await userFromAuth(ctx);
-    // ...validate that the user can upload to this bucket
-  },
   checkDelete: async (ctx, bucket, key) => {
     // const user = await userFromAuth(ctx);
     // ...validate that the user can delete this key
+  },
+  onUpload: async (ctx, key) => {
+    // ...do something with the key
+    // This technically runs in the `syncMetadata` mutation, as the upload
+    // is performed from the client side. Will run if using the `useUploadFile`
+    // hook, or if `syncMetadata` function is called directly.
   },
 });
 
