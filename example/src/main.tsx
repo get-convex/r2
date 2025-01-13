@@ -1,17 +1,18 @@
-import { StrictMode } from "react";
-import { createRoot } from "react-dom/client";
+import React from "react";
+import ReactDOM from "react-dom/client";
+import { ThemeProvider } from "next-themes";
 import { ConvexProvider, ConvexReactClient } from "convex/react";
 import App from "./App.tsx";
 import "./index.css";
 
-const address = import.meta.env.VITE_CONVEX_URL;
+const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
 
-const convex = new ConvexReactClient(address);
-
-createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <ConvexProvider client={convex}>
-      <App />
-    </ConvexProvider>
-  </StrictMode>
+ReactDOM.createRoot(document.getElementById("root")!).render(
+  <React.StrictMode>
+    <ThemeProvider attribute="class">
+      <ConvexProvider client={convex}>
+        <App />
+      </ConvexProvider>
+    </ThemeProvider>
+  </React.StrictMode>
 );

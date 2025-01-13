@@ -1,6 +1,6 @@
 import { v } from "convex/values";
-import { action, internalMutation, mutation, query } from "./_generated/server";
-import { components, internal } from "./_generated/api";
+import { mutation, query } from "./_generated/server";
+import { components } from "./_generated/api";
 import { R2 } from "@convex-dev/r2";
 import { DataModel } from "./_generated/dataModel";
 const r2 = new R2(components.r2);
@@ -34,18 +34,36 @@ export const {
     // const user = await userFromAuth(ctx);
     // ...validate that the user can delete this key
   },
-  onUpload: async (ctx, key) => {
+  onUpload: async (ctx, bucket, key) => {
     // ...do something with the key
     // This technically runs in the `syncMetadata` mutation, as the upload
     // is performed from the client side. Will run if using the `useUploadFile`
-    // hook, or if `syncMetadata` function is called directly.
+    // hook, or if `syncMetadata` function is called directly. Runs after the
+    // `checkUpload` callback.
+    await ctx.db.insert("images", {
+      bucket,
+      key,
+    });
+  },
+  onDelete: async (ctx, bucket, key) => {
+    // Delete related data from your database, etc.
+    // Runs after the `checkDelete` callback.
+    // Alternatively, you could have your own `deleteImage` mutation that calls
+    // the r2 component's `deleteObject` function.
+    const image = await ctx.db
+      .query("images")
+      .filter((q) => q.eq(q.field("key"), key))
+      .unique();
+    if (image) {
+      await ctx.db.delete(image._id);
+    }
   },
 });
 
-export const getRecentImages = query({
+export const listImages = query({
   args: {},
   handler: async (ctx) => {
-    const images = await ctx.db.query("images").take(10);
+    const images = await ctx.db.query("images").collect();
     return Promise.all(
       images.map(async (image) => ({
         ...image,
@@ -55,30 +73,14 @@ export const getRecentImages = query({
   },
 });
 
-export const sendImage = mutation({
-  args: { key: v.string(), author: v.string() },
-  handler: async (ctx, args) => {
-    await ctx.db.insert("images", args);
+export const updateImageCaption = mutation({
+  args: {
+    id: v.id("images"),
+    caption: v.optional(v.string()),
   },
-});
-
-export const deleteImageRef = internalMutation({
-  args: { key: v.string() },
   handler: async (ctx, args) => {
-    const image = await ctx.db
-      .query("images")
-      .withIndex("key", (q) => q.eq("key", args.key))
-      .first();
-    if (image) {
-      await ctx.db.delete(image._id);
-    }
-  },
-});
-
-export const deleteImage = action({
-  args: { key: v.string() },
-  handler: async (ctx, args) => {
-    await r2.deleteObject(ctx, args.key);
-    await ctx.runMutation(internal.example.deleteImageRef, { key: args.key });
+    await ctx.db.patch(args.id, {
+      caption: args.caption,
+    });
   },
 });

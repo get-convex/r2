@@ -226,6 +226,12 @@ export class R2 {
     ) => void | Promise<void>;
     onUpload?: (
       ctx: GenericMutationCtx<DataModel>,
+      bucket: string,
+      key: string
+    ) => void | Promise<void>;
+    onDelete?: (
+      ctx: GenericMutationCtx<DataModel>,
+      bucket: string,
       key: string
     ) => void | Promise<void>;
   }) {
@@ -259,7 +265,7 @@ export class R2 {
             await opts.checkUpload(ctx, this.r2Config.bucket);
           }
           if (opts?.onUpload) {
-            await opts.onUpload(ctx, args.key);
+            await opts.onUpload(ctx, this.r2Config.bucket, args.key);
           }
           await ctx.scheduler.runAfter(0, this.component.lib.syncMetadata, {
             key: args.key,
@@ -333,6 +339,9 @@ export class R2 {
         handler: async (ctx, args) => {
           if (opts?.checkDelete) {
             await opts.checkDelete(ctx, this.r2Config.bucket, args.key);
+          }
+          if (opts?.onDelete) {
+            await opts.onDelete(ctx, this.r2Config.bucket, args.key);
           }
           await ctx.scheduler.runAfter(0, this.component.lib.deleteObject, {
             key: args.key,
