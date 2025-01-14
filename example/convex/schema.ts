@@ -6,5 +6,5 @@ export default defineSchema({
     key: v.string(),
     bucket: v.string(),
     caption: v.optional(v.string()),
-  }).index("key", ["key"]),
+  }).index("bucket_key", ["bucket", "key"]),
 });

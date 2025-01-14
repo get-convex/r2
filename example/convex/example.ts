@@ -3,6 +3,8 @@ import { mutation, query } from "./_generated/server";
 import { components } from "./_generated/api";
 import { R2 } from "@convex-dev/r2";
 import { DataModel } from "./_generated/dataModel";
+import { paginationOptsValidator } from "convex/server";
+import { asyncMap } from "convex-helpers";
 const r2 = new R2(components.r2);
 
 export const {
@@ -52,7 +54,7 @@ export const {
     // the r2 component's `deleteObject` function.
     const image = await ctx.db
       .query("images")
-      .filter((q) => q.eq(q.field("key"), key))
+      .withIndex("bucket_key", (q) => q.eq("bucket", bucket).eq("key", key))
       .unique();
     if (image) {
       await ctx.db.delete(image._id);
