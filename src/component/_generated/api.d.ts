@@ -49,15 +49,21 @@ export type Mounts = {
     getMetadata: FunctionReference<
       "query",
       "public",
-      { bucket: string; key: string },
       {
-        _creationTime: number;
-        _id: string;
+        accessKeyId: string;
+        bucket: string;
+        endpoint: string;
+        key: string;
+        secretAccessKey: string;
+      },
+      {
         bucket: string;
         contentType?: string;
         key: string;
+        lastModified: string;
         sha256?: string;
         size?: number;
+        url: string;
       } | null
     >;
     insertMetadata: FunctionReference<
@@ -67,6 +73,7 @@ export type Mounts = {
         bucket: string;
         contentType?: string;
         key: string;
+        lastModified: string;
         sha256?: string;
         size?: number;
       },
@@ -75,15 +82,21 @@ export type Mounts = {
     listMetadata: FunctionReference<
       "query",
       "public",
-      { bucket: string; limit?: number },
+      {
+        accessKeyId: string;
+        bucket: string;
+        endpoint: string;
+        limit?: number;
+        secretAccessKey: string;
+      },
       Array<{
-        _creationTime: number;
-        _id: string;
         bucket: string;
         contentType?: string;
         key: string;
+        lastModified: string;
         sha256?: string;
         size?: number;
+        url: string;
       }>
     >;
     pageMetadata: FunctionReference<
@@ -108,6 +121,7 @@ export type Mounts = {
           bucket: string;
           contentType?: string;
           key: string;
+          lastModified: string;
           sha256?: string;
           size?: number;
         }>;

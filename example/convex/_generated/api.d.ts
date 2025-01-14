@@ -61,15 +61,21 @@ export declare const components: {
       getMetadata: FunctionReference<
         "query",
         "internal",
-        { bucket: string; key: string },
         {
-          _creationTime: number;
-          _id: string;
+          accessKeyId: string;
+          bucket: string;
+          endpoint: string;
+          key: string;
+          secretAccessKey: string;
+        },
+        {
           bucket: string;
           contentType?: string;
           key: string;
+          lastModified: string;
           sha256?: string;
           size?: number;
+          url: string;
         } | null
       >;
       insertMetadata: FunctionReference<
@@ -79,6 +85,7 @@ export declare const components: {
           bucket: string;
           contentType?: string;
           key: string;
+          lastModified: string;
           sha256?: string;
           size?: number;
         },
@@ -87,15 +94,21 @@ export declare const components: {
       listMetadata: FunctionReference<
         "query",
         "internal",
-        { bucket: string; limit?: number },
+        {
+          accessKeyId: string;
+          bucket: string;
+          endpoint: string;
+          limit?: number;
+          secretAccessKey: string;
+        },
         Array<{
-          _creationTime: number;
-          _id: string;
           bucket: string;
           contentType?: string;
           key: string;
+          lastModified: string;
           sha256?: string;
           size?: number;
+          url: string;
         }>
       >;
       pageMetadata: FunctionReference<
@@ -120,6 +133,7 @@ export declare const components: {
             bucket: string;
             contentType?: string;
             key: string;
+            lastModified: string;
             sha256?: string;
             size?: number;
           }>;

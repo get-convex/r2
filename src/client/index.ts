@@ -20,7 +20,6 @@ import {
   createR2Client,
   paginationReturnValidator,
   r2ConfigValidator,
-  withSystemFields,
 } from "../shared";
 import schema from "../component/schema";
 
@@ -133,8 +132,8 @@ export class R2 {
    */
   async getMetadata(ctx: RunQueryCtx, key: string) {
     return ctx.runQuery(this.component.lib.getMetadata, {
-      bucket: this.r2Config.bucket,
       key: key,
+      ...this.r2Config,
     });
   }
   /**
@@ -146,7 +145,7 @@ export class R2 {
    */
   async listMetadata(ctx: RunQueryCtx, limit?: number) {
     return ctx.runQuery(this.component.lib.listMetadata, {
-      bucket: this.r2Config.bucket,
+      ...this.r2Config,
       limit: limit,
     });
   }
@@ -281,7 +280,10 @@ export class R2 {
           key: v.string(),
         },
         returns: v.union(
-          v.object(withSystemFields(schema.tables.metadata.validator.fields)),
+          v.object({
+            ...schema.tables.metadata.validator.fields,
+            url: v.string(),
+          }),
           v.null()
         ),
         handler: async (ctx, args) => {
@@ -299,7 +301,10 @@ export class R2 {
           limit: v.optional(v.number()),
         },
         returns: v.array(
-          v.object(withSystemFields(schema.tables.metadata.validator.fields))
+          v.object({
+            ...schema.tables.metadata.validator.fields,
+            url: v.string(),
+          })
         ),
         handler: async (ctx, args) => {
           if (opts?.checkReadBucket) {

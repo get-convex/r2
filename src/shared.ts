@@ -1,5 +1,6 @@
 import { GenericValidator, Infer, v } from "convex/values";
 import { S3Client } from "@aws-sdk/client-s3";
+import { Doc, TableNames } from "./component/_generated/dataModel";
 
 export const r2ConfigValidator = v.object({
   bucket: v.string(),
@@ -19,14 +20,9 @@ export const createR2Client = (args: Infer<typeof r2ConfigValidator>) => {
   });
 };
 
-export const withSystemFields = <T extends Record<string, GenericValidator>>(
-  fields: T
-) => {
-  return {
-    _id: v.string(),
-    _creationTime: v.number(),
-    ...fields,
-  };
+export const withoutSystemFields = <T extends Doc<TableNames>>(fields: T) => {
+  const { _id, _creationTime, ...rest } = fields;
+  return rest;
 };
 
 export const paginationReturnValidator = (docValidator: GenericValidator) =>

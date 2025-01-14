@@ -1,51 +1,86 @@
 import { action, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import schema from "./schema";
-import { DeleteObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
+import {
+  DeleteObjectCommand,
+  GetObjectCommand,
+  HeadObjectCommand,
+  S3Client,
+} from "@aws-sdk/client-s3";
 import {
   createR2Client,
   paginationReturnValidator,
   r2ConfigValidator,
-  withSystemFields,
+  withoutSystemFields,
 } from "../shared";
 import { api } from "./_generated/api";
 import { paginationOptsValidator } from "convex/server";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { asyncMap } from "convex-helpers";
+
+const getUrl = async (r2: S3Client, bucket: string, key: string) => {
+  return await getSignedUrl(
+    r2,
+    new GetObjectCommand({ Bucket: bucket, Key: key })
+  );
+};
 
 export const getMetadata = query({
   args: {
-    bucket: v.string(),
     key: v.string(),
+    ...r2ConfigValidator.fields,
   },
   returns: v.union(
-    v.object(withSystemFields(schema.tables.metadata.validator.fields)),
+    v.object({
+      ...schema.tables.metadata.validator.fields,
+      url: v.string(),
+    }),
     v.null()
   ),
   handler: async (ctx, args) => {
-    return await ctx.db
+    const { key, ...r2Config } = args;
+    const r2 = createR2Client(r2Config);
+    const metadata = await ctx.db
       .query("metadata")
       .withIndex("bucket_key", (q) =>
         q.eq("bucket", args.bucket).eq("key", args.key)
       )
       .unique();
+    if (!metadata) {
+      return null;
+    }
+    return {
+      ...withoutSystemFields(metadata),
+      url: await getUrl(r2, r2Config.bucket, key),
+    };
   },
 });
 
 export const listMetadata = query({
   args: {
-    bucket: v.string(),
     limit: v.optional(v.number()),
+    ...r2ConfigValidator.fields,
   },
   returns: v.array(
-    v.object(withSystemFields(schema.tables.metadata.validator.fields))
+    v.object({
+      ...schema.tables.metadata.validator.fields,
+      url: v.string(),
+    })
   ),
   handler: async (ctx, args) => {
+    const { limit, ...r2Config } = args;
+    const r2 = createR2Client(r2Config);
     const listQuery = ctx.db
       .query("metadata")
-      .withIndex("bucket", (q) => q.eq("bucket", args.bucket));
-    if (typeof args.limit === "number") {
-      return listQuery.take(args.limit);
-    }
-    return listQuery.collect();
+      .withIndex("bucket", (q) => q.eq("bucket", r2Config.bucket));
+    const list =
+      typeof limit === "number"
+        ? await listQuery.take(limit)
+        : await listQuery.collect();
+    return asyncMap(list, async (doc) => ({
+      ...withoutSystemFields(doc),
+      url: await getUrl(r2, r2Config.bucket, doc.key),
+    }));
   },
 });
 
@@ -82,6 +117,7 @@ export const insertMetadata = mutation({
       size: args.size,
       sha256: args.sha256,
       bucket: args.bucket,
+      lastModified: args.lastModified,
     });
   },
 });
@@ -102,6 +138,7 @@ export const syncMetadata = action({
     const response = await r2.send(command);
     await ctx.runMutation(api.lib.insertMetadata, {
       key,
+      lastModified: response.LastModified?.toISOString() ?? "",
       contentType: response.ContentType,
       size: response.ContentLength,
       sha256: response.ChecksumSHA256,

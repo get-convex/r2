@@ -3,8 +3,6 @@ import { mutation, query } from "./_generated/server";
 import { components } from "./_generated/api";
 import { R2 } from "@convex-dev/r2";
 import { DataModel } from "./_generated/dataModel";
-import { paginationOptsValidator } from "convex/server";
-import { asyncMap } from "convex-helpers";
 const r2 = new R2(components.r2);
 
 export const {

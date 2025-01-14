@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@convex-dev/r2": "file:..",
+    "@radix-ui/react-separator": "^1.1.1",
     "@radix-ui/react-slot": "^1.1.1",
     "@tanstack/react-table": "^8.20.6",
     "autoprefixer": "^10.4.20",
