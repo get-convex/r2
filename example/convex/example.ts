@@ -40,6 +40,10 @@ export const {
     // is performed from the client side. Will run if using the `useUploadFile`
     // hook, or if `syncMetadata` function is called directly. Runs after the
     // `checkUpload` callback.
+    //
+    // Note: If you want to associate the newly uploaded file with some other
+    // data, like a message, useUploadFile returns the key in the client so you
+    // can do it there.
     await ctx.db.insert("images", {
       bucket,
       key,

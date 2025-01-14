@@ -35,7 +35,9 @@ export default function App() {
 
   async function handleUpload(event: React.ChangeEvent<HTMLInputElement>) {
     event.preventDefault();
-    await uploadFile(event.target.files![0]);
+    // `uploadFile` returns the key of the uploaded file, which you can use to
+    // associate the file with some other data, like a message.
+    const key = await uploadFile(event.target.files![0]);
   }
 
   // Debounce the updateImageCaption mutation to avoid blocking input changes.
