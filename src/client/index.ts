@@ -33,6 +33,9 @@ export type ClientApi = ApiFromModules<{
 type RunQueryCtx = {
   runQuery: GenericQueryCtx<GenericDataModel>["runQuery"];
 };
+type RunMutationCtx = {
+  runMutation: GenericMutationCtx<GenericDataModel>["runMutation"];
+};
 type RunActionCtx = {
   runAction: GenericActionCtx<GenericDataModel>["runAction"];
 };
@@ -169,8 +172,8 @@ export class R2 {
    * @param key - The R2 object key.
    * @returns A promise that resolves when the object is deleted.
    */
-  async deleteObject(ctx: RunActionCtx, key: string) {
-    await ctx.runAction(this.component.lib.deleteObject, {
+  async deleteObject(ctx: RunMutationCtx, key: string) {
+    await ctx.runMutation(this.component.lib.deleteObject, {
       key: key,
       ...this.r2Config,
     });

@@ -13,10 +13,13 @@ import {
   r2ConfigValidator,
   withoutSystemFields,
 } from "../shared";
-import { api } from "./_generated/api";
+import { api, components } from "./_generated/api";
 import { paginationOptsValidator } from "convex/server";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { asyncMap } from "convex-helpers";
+import { ActionRetrier } from "@convex-dev/action-retrier";
+
+const retrier = new ActionRetrier(components.actionRetrier);
 
 const getUrl = async (r2: S3Client, bucket: string, key: string) => {
   return await getSignedUrl(
@@ -166,7 +169,7 @@ export const deleteMetadata = mutation({
   },
 });
 
-export const deleteObject = action({
+export const deleteR2Object = action({
   args: {
     key: v.string(),
     ...r2ConfigValidator.fields,
@@ -176,14 +179,27 @@ export const deleteObject = action({
     const { key, ...r2Config } = args;
     const r2 = createR2Client(r2Config);
     await r2.send(
-      new DeleteObjectCommand({
-        Bucket: r2Config.bucket,
-        Key: key,
-      })
+      new DeleteObjectCommand({ Bucket: r2Config.bucket, Key: key })
     );
-    await ctx.runMutation(api.lib.deleteMetadata, {
-      key,
-      bucket: r2Config.bucket,
-    });
+  },
+});
+
+export const deleteObject = mutation({
+  args: {
+    key: v.string(),
+    ...r2ConfigValidator.fields,
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const metadata = await ctx.db
+      .query("metadata")
+      .withIndex("bucket_key", (q) =>
+        q.eq("bucket", args.bucket).eq("key", args.key)
+      )
+      .unique();
+    if (metadata) {
+      await ctx.db.delete(metadata._id);
+    }
+    await retrier.run(ctx, api.lib.deleteR2Object, args);
   },
 });
