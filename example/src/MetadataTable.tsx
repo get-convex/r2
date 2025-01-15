@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/table";
 
 const columns: ColumnDef<
-  (typeof api.example.listMetadata._returnType)[number]
+  (typeof api.example.listMetadata._returnType)["page"][number]
 >[] = [
   {
     accessorKey: "bucket",
@@ -119,7 +119,7 @@ const columns: ColumnDef<
 export const MetadataTable = ({
   data,
 }: {
-  data: (typeof api.example.listMetadata._returnType)[number][];
+  data: (typeof api.example.listMetadata._returnType)["page"];
 }) => {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
