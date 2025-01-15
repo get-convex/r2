@@ -28,7 +28,25 @@ declare const fullApi: ApiFromModules<{
 }>;
 export type Mounts = {
   lib: {
+    deleteMetadata: FunctionReference<
+      "mutation",
+      "public",
+      { bucket: string; key: string },
+      null
+    >;
     deleteObject: FunctionReference<
+      "mutation",
+      "public",
+      {
+        accessKeyId: string;
+        bucket: string;
+        endpoint: string;
+        key: string;
+        secretAccessKey: string;
+      },
+      null
+    >;
+    deleteR2Object: FunctionReference<
       "action",
       "public",
       {
@@ -38,48 +56,9 @@ export type Mounts = {
         key: string;
         secretAccessKey: string;
       },
-      any
-    >;
-    exportConvexFilesToR2: FunctionReference<
-      "action",
-      "public",
-      {
-        accessKeyId: string;
-        batchSize?: number;
-        bucket: string;
-        deleteFn: string;
-        endpoint: string;
-        listFn: string;
-        nextFn: string;
-        secretAccessKey: string;
-        uploadFn: string;
-      },
-      any
-    >;
-    generateUploadUrl: FunctionReference<
-      "action",
-      "public",
-      {
-        accessKeyId: string;
-        bucket: string;
-        endpoint: string;
-        secretAccessKey: string;
-      },
-      any
+      null
     >;
     getMetadata: FunctionReference<
-      "action",
-      "public",
-      {
-        accessKeyId: string;
-        bucket: string;
-        endpoint: string;
-        key: string;
-        secretAccessKey: string;
-      },
-      any
-    >;
-    getUrl: FunctionReference<
       "query",
       "public",
       {
@@ -89,19 +68,72 @@ export type Mounts = {
         key: string;
         secretAccessKey: string;
       },
-      any
+      {
+        bucket: string;
+        bucketLink: string;
+        contentType?: string;
+        key: string;
+        lastModified: string;
+        link: string;
+        sha256?: string;
+        size?: number;
+        url: string;
+      } | null
     >;
-    store: FunctionReference<
+    insertMetadata: FunctionReference<
+      "mutation",
+      "public",
+      {
+        bucket: string;
+        contentType?: string;
+        key: string;
+        lastModified: string;
+        link: string;
+        sha256?: string;
+        size?: number;
+      },
+      null
+    >;
+    listMetadata: FunctionReference<
+      "query",
+      "public",
+      {
+        accessKeyId: string;
+        bucket: string;
+        cursor?: string;
+        endpoint: string;
+        limit?: number;
+        secretAccessKey: string;
+      },
+      {
+        continueCursor: string;
+        isDone: boolean;
+        page: Array<{
+          bucket: string;
+          bucketLink: string;
+          contentType?: string;
+          key: string;
+          lastModified: string;
+          link: string;
+          sha256?: string;
+          size?: number;
+          url: string;
+        }>;
+        pageStatus?: null | "SplitRecommended" | "SplitRequired";
+        splitCursor?: null | string;
+      }
+    >;
+    syncMetadata: FunctionReference<
       "action",
       "public",
       {
         accessKeyId: string;
         bucket: string;
         endpoint: string;
+        key: string;
         secretAccessKey: string;
-        url: string;
       },
-      any
+      null
     >;
   };
 };
@@ -119,4 +151,50 @@ export declare const internal: FilterApi<
   FunctionReference<any, "internal">
 >;
 
-export declare const components: {};
+export declare const components: {
+  actionRetrier: {
+    public: {
+      cancel: FunctionReference<
+        "mutation",
+        "internal",
+        { runId: string },
+        boolean
+      >;
+      cleanup: FunctionReference<
+        "mutation",
+        "internal",
+        { runId: string },
+        any
+      >;
+      start: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          functionArgs: any;
+          functionHandle: string;
+          options: {
+            base: number;
+            initialBackoffMs: number;
+            logLevel: "DEBUG" | "INFO" | "WARN" | "ERROR";
+            maxFailures: number;
+            onComplete?: string;
+          };
+        },
+        string
+      >;
+      status: FunctionReference<
+        "query",
+        "internal",
+        { runId: string },
+        | { type: "inProgress" }
+        | {
+            result:
+              | { returnValue: any; type: "success" }
+              | { error: string; type: "failed" }
+              | { type: "canceled" };
+            type: "completed";
+          }
+      >;
+    };
+  };
+};

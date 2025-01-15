@@ -1,39 +1,72 @@
 import { v } from "convex/values";
-import {
-  action,
-  internalAction,
-  internalMutation,
-  mutation,
-  query,
-} from "./_generated/server";
-import { components, internal } from "./_generated/api";
+import { mutation, query } from "./_generated/server";
+import { components } from "./_generated/api";
 import { R2 } from "@convex-dev/r2";
+import { DataModel } from "./_generated/dataModel";
 const r2 = new R2(components.r2);
 
-export const listConvexFiles = r2.listConvexFiles();
-export const uploadFile = r2.uploadFile();
-export const deleteFile = r2.deleteFile();
+export const {
+  generateUploadUrl,
+  syncMetadata,
 
-export const exportConvexFilesToR2 = internalAction({
-  handler: async (ctx) => {
-    await r2.exportConvexFilesToR2(ctx, {
-      listFn: internal.example.listConvexFiles,
-      uploadFn: internal.example.uploadFile,
-      nextFn: internal.example.exportConvexFilesToR2,
-      deleteFn: internal.example.deleteFile,
-      batchSize: 10,
+  // These aren't used in the example, but can be exported this way to utilize
+  // the permission check callbacks.
+  getMetadata,
+  listMetadata,
+  deleteObject,
+} = r2.clientApi<DataModel>({
+  // The checkUpload callback is used for both `generateUploadUrl` and
+  // `syncMetadata`.
+  checkUpload: async (ctx, bucket) => {
+    // const user = await userFromAuth(ctx);
+    // ...validate that the user can upload to this bucket
+  },
+  checkReadKey: async (ctx, bucket, key) => {
+    // const user = await userFromAuth(ctx);
+    // ...validate that the user can read this key
+  },
+  checkReadBucket: async (ctx, bucket) => {
+    // const user = await userFromAuth(ctx);
+    // ...validate that the user can read this bucket
+  },
+  checkDelete: async (ctx, bucket, key) => {
+    // const user = await userFromAuth(ctx);
+    // ...validate that the user can delete this key
+  },
+  onUpload: async (ctx, bucket, key) => {
+    // ...do something with the key
+    // This technically runs in the `syncMetadata` mutation, as the upload
+    // is performed from the client side. Will run if using the `useUploadFile`
+    // hook, or if `syncMetadata` function is called directly. Runs after the
+    // `checkUpload` callback.
+    //
+    // Note: If you want to associate the newly uploaded file with some other
+    // data, like a message, useUploadFile returns the key in the client so you
+    // can do it there.
+    await ctx.db.insert("images", {
+      bucket,
+      key,
     });
+  },
+  onDelete: async (ctx, bucket, key) => {
+    // Delete related data from your database, etc.
+    // Runs after the `checkDelete` callback.
+    // Alternatively, you could have your own `deleteImage` mutation that calls
+    // the r2 component's `deleteObject` function.
+    const image = await ctx.db
+      .query("images")
+      .withIndex("bucket_key", (q) => q.eq("bucket", bucket).eq("key", key))
+      .unique();
+    if (image) {
+      await ctx.db.delete(image._id);
+    }
   },
 });
 
-export const generateUploadUrl = action(() => {
-  return r2.generateUploadUrl();
-});
-
-export const getRecentImages = query({
+export const listImages = query({
   args: {},
   handler: async (ctx) => {
-    const images = await ctx.db.query("images").take(10);
+    const images = await ctx.db.query("images").collect();
     return Promise.all(
       images.map(async (image) => ({
         ...image,
@@ -43,44 +76,14 @@ export const getRecentImages = query({
   },
 });
 
-export const sendImage = mutation({
-  args: { key: v.string(), author: v.string() },
-  handler: async (ctx, args) => {
-    await ctx.db.insert("images", args);
+export const updateImageCaption = mutation({
+  args: {
+    id: v.id("images"),
+    caption: v.optional(v.string()),
   },
-});
-
-export const httpSendImage = internalMutation({
-  args: { key: v.string(), requestUrl: v.string() },
   handler: async (ctx, args) => {
-    const author = new URL(args.requestUrl).searchParams.get("author");
-    if (!author) {
-      throw new Error("Author is required");
-    }
-    await ctx.db.insert("images", {
-      key: args.key,
-      author,
+    await ctx.db.patch(args.id, {
+      caption: args.caption,
     });
-  },
-});
-
-export const deleteImageRef = internalMutation({
-  args: { key: v.string() },
-  handler: async (ctx, args) => {
-    const image = await ctx.db
-      .query("images")
-      .withIndex("key", (q) => q.eq("key", args.key))
-      .first();
-    if (image) {
-      await ctx.db.delete(image._id);
-    }
-  },
-});
-
-export const deleteImage = action({
-  args: { key: v.string() },
-  handler: async (ctx, args) => {
-    await r2.deleteByKey(ctx, args.key);
-    await ctx.runMutation(internal.example.deleteImageRef, args);
   },
 });

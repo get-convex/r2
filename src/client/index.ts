@@ -1,48 +1,72 @@
 import {
-  ActionBuilder,
-  createFunctionHandle,
+  ApiFromModules,
   Expand,
-  FunctionHandle,
   FunctionReference,
   GenericActionCtx,
   GenericDataModel,
-  httpActionGeneric,
-  HttpRouter,
-  internalActionGeneric,
-  internalMutationGeneric,
-  internalQueryGeneric,
-  MutationBuilder,
-  QueryBuilder,
-  RegisteredAction,
-  RegisteredMutation,
-  RegisteredQuery,
+  GenericMutationCtx,
+  GenericQueryCtx,
+  mutationGeneric,
+  PaginationOptions,
+  paginationOptsValidator,
+  queryGeneric,
 } from "convex/server";
 import { GenericId, Infer, v } from "convex/values";
-import { corsRouter } from "convex-helpers/server/cors";
 import { api } from "../component/_generated/api";
-import {
-  GetObjectCommand,
-  HeadObjectCommand,
-  PutObjectCommand,
-} from "@aws-sdk/client-s3";
+import { GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import {
   createR2Client,
-  DeleteArgs,
-  ListArgs,
-  ListResult,
+  paginationReturnValidator,
   r2ConfigValidator,
-  UploadArgs,
 } from "../shared";
-import { DataModel, Id } from "../component/_generated/dataModel";
+import schema from "../component/schema";
 
-// Note: this value is hard-coded in the docstring below. Please keep in sync.
 export const DEFAULT_BATCH_SIZE = 10;
+
+export type ClientApi = ApiFromModules<{
+  client: ReturnType<R2["clientApi"]>;
+}>["client"];
+
+// e.g. `ctx` from a Convex mutation or action.
+type RunQueryCtx = {
+  runQuery: GenericQueryCtx<GenericDataModel>["runQuery"];
+};
+type RunMutationCtx = {
+  runMutation: GenericMutationCtx<GenericDataModel>["runMutation"];
+};
+type RunActionCtx = {
+  runAction: GenericActionCtx<GenericDataModel>["runAction"];
+};
 
 export class R2 {
   public readonly r2Config: Infer<typeof r2ConfigValidator>;
   public readonly r2: S3Client;
+  /**
+   * Backend API for the R2 component.
+   * Responsible for exposing the `client` API to the client, and having
+   * convenience methods for interacting with the component from the backend.
+   *
+   * Typically used like:
+   *
+   * ```ts
+   * const r2 = new R2(components.r2);
+   * export const {
+   * ... // see {@link clientApi} docstring for details
+   * } = r2.clientApi({...});
+   * ```
+   *
+   * @param component - Generally `components.r2` from
+   * `./_generated/api` once you've configured it in `convex.config.ts`.
+   * @param options - Optional config object, most properties usually set via
+   * environment variables.
+   *   - `R2_BUCKET` - The bucket to use for the R2 component.
+   *   - `R2_ENDPOINT` - The endpoint to use for the R2 component.
+   *   - `R2_ACCESS_KEY_ID` - The access key ID to use for the R2 component.
+   *   - `R2_SECRET_ACCESS_KEY` - The secret access key to use for the R2 component.
+   *   - `defaultBatchSize` - The default batch size to use for pagination.
+   */
   constructor(
     public component: UseApi<typeof api>,
     public options: {
@@ -60,244 +84,267 @@ export class R2 {
       secretAccessKey:
         options?.R2_SECRET_ACCESS_KEY ?? process.env.R2_SECRET_ACCESS_KEY!,
     };
+    if (
+      !this.r2Config.bucket ||
+      !this.r2Config.endpoint ||
+      !this.r2Config.accessKeyId ||
+      !this.r2Config.secretAccessKey
+    ) {
+      throw new Error(
+        "R2 configuration is missing required fields.\n" +
+          "R2_BUCKET, R2_ENDPOINT, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY"
+      );
+    }
     this.r2 = createR2Client(this.r2Config);
   }
+  /**
+   * Get a signed URL for serving an object from R2.
+   *
+   * @param key - The R2 object key.
+   * @returns A promise that resolves to a signed URL for the object.
+   */
+  async getUrl(key: string) {
+    return await getSignedUrl(
+      this.r2,
+      new GetObjectCommand({ Bucket: this.r2Config.bucket, Key: key })
+    );
+  }
+  /**
+   * Generate a signed URL for uploading an object to R2.
+   *
+   * @returns A promise that resolves to an object with the following fields:
+   *   - `key` - The R2 object key.
+   *   - `url` - A signed URL for uploading the object.
+   */
   async generateUploadUrl() {
     const key = crypto.randomUUID();
     const url = await getSignedUrl(
       this.r2,
-      new PutObjectCommand({
-        Bucket: this.r2Config.bucket,
-        Key: key,
-      })
+      new PutObjectCommand({ Bucket: this.r2Config.bucket, Key: key })
     );
     return { key, url };
   }
-  async store(ctx: RunActionCtx, url: string) {
-    return await ctx.runAction(this.component.lib.store, {
-      url,
+  /**
+   * Retrieve R2 object metadata and store in Convex.
+   *
+   * @param ctx - A Convex action context.
+   * @param key - The R2 object key.
+   * @returns A promise that resolves when the metadata is synced.
+   */
+  async syncMetadata(ctx: RunActionCtx, key: string) {
+    await ctx.runAction(this.component.lib.syncMetadata, {
+      key: key,
       ...this.r2Config,
     });
   }
-  async getUrl(key: string) {
-    return await getSignedUrl(
-      this.r2,
-      new GetObjectCommand({
-        Bucket: this.r2Config.bucket,
-        Key: key,
-      })
-    );
-  }
-  async deleteByKey(ctx: RunActionCtx, key: string) {
-    await ctx.runAction(this.component.lib.deleteObject, {
-      key,
+  /**
+   * Retrieve R2 object metadata from Convex.
+   *
+   * @param ctx - A Convex query context.
+   * @param key - The R2 object key.
+   * @returns A promise that resolves to the metadata for the object.
+   */
+  async getMetadata(ctx: RunQueryCtx, key: string) {
+    return ctx.runQuery(this.component.lib.getMetadata, {
+      key: key,
       ...this.r2Config,
     });
   }
-  async getMetadata(ctx: RunActionCtx, key: string) {
-    return await ctx.runAction(this.component.lib.getMetadata, {
-      key,
+  /**
+   * Retrieve all metadata from Convex for a given bucket.
+   *
+   * @param ctx - A Convex query context.
+   * @param limit (optional) - The maximum number of documents to return.
+   * @returns A promise that resolves to an array of metadata documents.
+   */
+  async listMetadata(ctx: RunQueryCtx, limit?: number, cursor?: string | null) {
+    return ctx.runQuery(this.component.lib.listMetadata, {
+      ...this.r2Config,
+      limit: limit,
+      cursor: cursor ?? undefined,
+    });
+  }
+  /**
+   * Delete an object from R2.
+   *
+   * @param ctx - A Convex action context.
+   * @param key - The R2 object key.
+   * @returns A promise that resolves when the object is deleted.
+   */
+  async deleteObject(ctx: RunMutationCtx, key: string) {
+    await ctx.runMutation(this.component.lib.deleteObject, {
+      key: key,
       ...this.r2Config,
     });
   }
-  listConvexFiles({
-    batchSize: functionDefaultBatchSize,
-  }: {
-    batchSize?: number;
-  } = {}) {
-    const defaultBatchSize =
-      functionDefaultBatchSize ??
-      this.options?.defaultBatchSize ??
-      DEFAULT_BATCH_SIZE;
-    return (internalQueryGeneric as QueryBuilder<DataModel, "internal">)({
-      args: {
-        batchSize: v.optional(v.number()),
-      },
-      handler: async (ctx, args) => {
-        const numItems = args.batchSize || defaultBatchSize;
-        if (args.batchSize === 0) {
-          console.warn(`Batch size is zero. Using the default: ${numItems}\n`);
-        }
-        return await ctx.db.system.query("_storage").take(numItems);
-      },
-    }) satisfies RegisteredQuery<
-      "internal",
-      { batchSize: number },
-      Promise<
-        {
-          _id: Id<"_storage">;
-          _creationTime: number;
-          contentType?: string | undefined;
-          sha256: string;
-          size: number;
-        }[]
-      >
-    >;
-  }
-  uploadFile() {
-    return (internalActionGeneric as ActionBuilder<DataModel, "internal">)({
-      args: {
-        files: v.array(
+  /**
+   * Expose the client API to the client for use with the `useUploadFile` hook.
+   * If you export these in `convex/r2.ts`, pass `api.r2`
+   * to the `useUploadFile` hook.
+   *
+   * It allows you to define optional read, upload, and delete permissions.
+   *
+   * You can pass the optional type argument `<DataModel>` to have the `ctx`
+   * parameter specific to your tables.
+   *
+   * ```ts
+   * import { DataModel } from "./convex/_generated/dataModel";
+   * // ...
+   * export const { ... } = r2.clientApi<DataModel>({...});
+   * ```
+   *
+   * To define just one function to use for both, you can define it like this:
+   * ```ts
+   * async function checkPermissions(ctx: QueryCtx, id: string) {
+   *   const user = await getAuthUser(ctx);
+   *   if (!user || !(await canUserAccessDocument(user, id))) {
+   *     throw new Error("Unauthorized");
+   *   }
+   * }
+   * ```
+   * @param opts - Optional callbacks.
+   * @returns functions to export, so the `useUploadFile` hook can use them, or
+   * for direct use in your own client code.
+   */
+  clientApi<DataModel extends GenericDataModel>(opts?: {
+    checkReadKey?: (
+      ctx: GenericQueryCtx<DataModel>,
+      bucket: string,
+      key: string
+    ) => void | Promise<void>;
+    checkReadBucket?: (
+      ctx: GenericQueryCtx<DataModel>,
+      bucket: string
+    ) => void | Promise<void>;
+    checkUpload?: (
+      ctx: GenericQueryCtx<DataModel>,
+      bucket: string
+    ) => void | Promise<void>;
+    checkDelete?: (
+      ctx: GenericQueryCtx<DataModel>,
+      bucket: string,
+      key: string
+    ) => void | Promise<void>;
+    onUpload?: (
+      ctx: GenericMutationCtx<DataModel>,
+      bucket: string,
+      key: string
+    ) => void | Promise<void>;
+    onDelete?: (
+      ctx: GenericMutationCtx<DataModel>,
+      bucket: string,
+      key: string
+    ) => void | Promise<void>;
+  }) {
+    return {
+      /**
+       * Generate a signed URL for uploading an object to R2.
+       */
+      generateUploadUrl: mutationGeneric({
+        args: {},
+        returns: v.object({
+          key: v.string(),
+          url: v.string(),
+        }),
+        handler: async (ctx) => {
+          if (opts?.checkUpload) {
+            await opts.checkUpload(ctx, this.r2Config.bucket);
+          }
+          return this.generateUploadUrl();
+        },
+      }),
+      /**
+       * Retrieve R2 object metadata and store in Convex.
+       */
+      syncMetadata: mutationGeneric({
+        args: {
+          key: v.string(),
+        },
+        returns: v.null(),
+        handler: async (ctx, args) => {
+          if (opts?.checkUpload) {
+            await opts.checkUpload(ctx, this.r2Config.bucket);
+          }
+          if (opts?.onUpload) {
+            await opts.onUpload(ctx, this.r2Config.bucket, args.key);
+          }
+          await ctx.scheduler.runAfter(0, this.component.lib.syncMetadata, {
+            key: args.key,
+            ...this.r2Config,
+          });
+        },
+      }),
+      /**
+       * Retrieve metadata for an R2 object from Convex.
+       */
+      getMetadata: queryGeneric({
+        args: {
+          key: v.string(),
+        },
+        returns: v.union(
           v.object({
-            _id: v.id("_storage"),
-            _creationTime: v.number(),
-            contentType: v.optional(v.string()),
-            sha256: v.string(),
-            size: v.number(),
+            ...schema.tables.metadata.validator.fields,
+            url: v.string(),
+            bucketLink: v.string(),
+          }),
+          v.null()
+        ),
+        handler: async (ctx, args) => {
+          if (opts?.checkReadKey) {
+            await opts.checkReadKey(ctx, this.r2Config.bucket, args.key);
+          }
+          return this.getMetadata(ctx, args.key);
+        },
+      }),
+      /**
+       * Retrieve all metadata for a given bucket from Convex.
+       */
+      listMetadata: queryGeneric({
+        args: { paginationOpts: paginationOptsValidator },
+        returns: paginationReturnValidator(
+          v.object({
+            ...schema.tables.metadata.validator.fields,
+            url: v.string(),
+            bucketLink: v.string(),
           })
         ),
-        deleteFn: v.string(),
-      },
-      handler: async (ctx, args) => {
-        const deleteFn = args.deleteFn as FunctionHandle<
-          "mutation",
-          { fileId: Id<"_storage"> },
-          void
-        >;
-        await Promise.all(
-          args.files.map(async (file) => {
-            const blob = await ctx.storage.get(file._id);
-            if (!blob) {
-              return;
-            }
-            await this.r2.send(
-              new PutObjectCommand({
-                Bucket: this.r2Config.bucket,
-                Key: file._id,
-                Body: blob,
-                ContentType: file.contentType ?? undefined,
-                ChecksumSHA256: file.sha256,
-              })
-            );
-            const metadata = await this.r2.send(
-              new HeadObjectCommand({
-                Bucket: this.r2Config.bucket,
-                Key: file._id,
-              })
-            );
-            if (metadata.ChecksumSHA256 !== file.sha256) {
-              throw new Error("Checksum mismatch");
-            }
-            await ctx.runMutation(deleteFn, { fileId: file._id });
-          })
-        );
-      },
-    }) satisfies RegisteredAction<
-      "internal",
-      {
-        files: {
-          contentType?: string | undefined;
-          sha256: string;
-          size: number;
-          _creationTime: number;
-          _id: Id<"_storage">;
-        }[];
-        deleteFn: string;
-      },
-      Promise<void>
-    >;
-  }
-  deleteFile() {
-    return (internalMutationGeneric as MutationBuilder<DataModel, "internal">)({
-      args: {
-        fileId: v.id("_storage"),
-      },
-      handler: async (ctx, args) => {
-        await ctx.storage.delete(args.fileId);
-      },
-    }) satisfies RegisteredMutation<
-      "internal",
-      { fileId: Id<"_storage"> },
-      Promise<void>
-    >;
-  }
-  async exportConvexFilesToR2<T extends DataModel>(
-    ctx: GenericActionCtx<T>,
-    {
-      listFn,
-      uploadFn,
-      nextFn,
-      deleteFn,
-      batchSize,
-    }: {
-      listFn: FunctionReference<"query", "internal", ListArgs, ListResult>;
-      uploadFn: FunctionReference<"action", "internal", UploadArgs>;
-      deleteFn: FunctionReference<"mutation", "internal", DeleteArgs>;
-      nextFn: FunctionReference<"action", "internal">;
-      batchSize?: number;
-    }
-  ) {
-    return await ctx.runAction(this.component.lib.exportConvexFilesToR2, {
-      ...this.r2Config,
-      listFn: await createFunctionHandle(listFn),
-      uploadFn: await createFunctionHandle(uploadFn),
-      nextFn: await createFunctionHandle(nextFn),
-      deleteFn: await createFunctionHandle(deleteFn),
-      batchSize:
-        batchSize ?? this.options?.defaultBatchSize ?? DEFAULT_BATCH_SIZE,
-    });
-  }
-  registerRoutes(
-    http: HttpRouter,
-    {
-      pathPrefix = "/r2",
-      onSend,
-    }: {
-      onSend?: FunctionReference<
-        "mutation",
-        "internal",
-        { key: string; requestUrl: string }
-      >;
-      pathPrefix?: string;
-    } = {}
-  ) {
-    const cors = corsRouter(http);
-    cors.route({
-      pathPrefix: `${pathPrefix}/get/`,
-      method: "GET",
-      handler: httpActionGeneric(async (_ctx, request) => {
-        const { pathname } = new URL(request.url);
-        const key = pathname.split("/").pop()!;
-        const command = new GetObjectCommand({
-          Bucket: this.r2Config.bucket,
-          Key: key,
-        });
-        const response = await this.r2.send(command);
-
-        if (!response.Body) {
-          return new Response("Image not found", {
-            status: 404,
+        handler: async (ctx, args) => {
+          if (opts?.checkReadBucket) {
+            await opts.checkReadBucket(ctx, this.r2Config.bucket);
+          }
+          return this.listMetadata(
+            ctx,
+            args.paginationOpts.numItems,
+            args.paginationOpts.cursor
+          );
+        },
+      }),
+      /**
+       * Delete an object from R2 and remove its metadata from Convex.
+       */
+      deleteObject: mutationGeneric({
+        args: {
+          key: v.string(),
+        },
+        returns: v.null(),
+        handler: async (ctx, args) => {
+          if (opts?.checkDelete) {
+            await opts.checkDelete(ctx, this.r2Config.bucket, args.key);
+          }
+          if (opts?.onDelete) {
+            await opts.onDelete(ctx, this.r2Config.bucket, args.key);
+          }
+          await ctx.scheduler.runAfter(0, this.component.lib.deleteObject, {
+            key: args.key,
+            ...this.r2Config,
           });
-        }
-        return new Response(await response.Body.transformToByteArray());
+        },
       }),
-    });
-    cors.route({
-      path: `${pathPrefix}/send`,
-      method: "POST",
-      handler: httpActionGeneric(async (ctx, request) => {
-        const blob = await request.blob();
-        const key = crypto.randomUUID();
-        const command = new PutObjectCommand({
-          Bucket: this.r2Config.bucket,
-          Key: key,
-          Body: blob,
-          ContentType: request.headers.get("Content-Type") ?? undefined,
-        });
-        await this.r2.send(command);
-        if (onSend) {
-          await ctx.runMutation(onSend, { key, requestUrl: request.url });
-        }
-        return new Response(null);
-      }),
-    });
+    };
   }
 }
 
 /* Type utils follow */
-type RunActionCtx = {
-  runAction: GenericActionCtx<GenericDataModel>["runAction"];
-};
 
 export type OpaqueIds<T> =
   T extends GenericId<infer _T>

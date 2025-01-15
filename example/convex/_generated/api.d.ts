@@ -9,7 +9,6 @@
  */
 
 import type * as example from "../example.js";
-import type * as http from "../http.js";
 
 import type {
   ApiFromModules,
@@ -26,7 +25,6 @@ import type {
  */
 declare const fullApi: ApiFromModules<{
   example: typeof example;
-  http: typeof http;
 }>;
 declare const fullApiWithMounts: typeof fullApi;
 
@@ -42,7 +40,25 @@ export declare const internal: FilterApi<
 export declare const components: {
   r2: {
     lib: {
+      deleteMetadata: FunctionReference<
+        "mutation",
+        "internal",
+        { bucket: string; key: string },
+        null
+      >;
       deleteObject: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          accessKeyId: string;
+          bucket: string;
+          endpoint: string;
+          key: string;
+          secretAccessKey: string;
+        },
+        null
+      >;
+      deleteR2Object: FunctionReference<
         "action",
         "internal",
         {
@@ -52,48 +68,9 @@ export declare const components: {
           key: string;
           secretAccessKey: string;
         },
-        any
-      >;
-      exportConvexFilesToR2: FunctionReference<
-        "action",
-        "internal",
-        {
-          accessKeyId: string;
-          batchSize?: number;
-          bucket: string;
-          deleteFn: string;
-          endpoint: string;
-          listFn: string;
-          nextFn: string;
-          secretAccessKey: string;
-          uploadFn: string;
-        },
-        any
-      >;
-      generateUploadUrl: FunctionReference<
-        "action",
-        "internal",
-        {
-          accessKeyId: string;
-          bucket: string;
-          endpoint: string;
-          secretAccessKey: string;
-        },
-        any
+        null
       >;
       getMetadata: FunctionReference<
-        "action",
-        "internal",
-        {
-          accessKeyId: string;
-          bucket: string;
-          endpoint: string;
-          key: string;
-          secretAccessKey: string;
-        },
-        any
-      >;
-      getUrl: FunctionReference<
         "query",
         "internal",
         {
@@ -103,19 +80,72 @@ export declare const components: {
           key: string;
           secretAccessKey: string;
         },
-        any
+        {
+          bucket: string;
+          bucketLink: string;
+          contentType?: string;
+          key: string;
+          lastModified: string;
+          link: string;
+          sha256?: string;
+          size?: number;
+          url: string;
+        } | null
       >;
-      store: FunctionReference<
+      insertMetadata: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          bucket: string;
+          contentType?: string;
+          key: string;
+          lastModified: string;
+          link: string;
+          sha256?: string;
+          size?: number;
+        },
+        null
+      >;
+      listMetadata: FunctionReference<
+        "query",
+        "internal",
+        {
+          accessKeyId: string;
+          bucket: string;
+          cursor?: string;
+          endpoint: string;
+          limit?: number;
+          secretAccessKey: string;
+        },
+        {
+          continueCursor: string;
+          isDone: boolean;
+          page: Array<{
+            bucket: string;
+            bucketLink: string;
+            contentType?: string;
+            key: string;
+            lastModified: string;
+            link: string;
+            sha256?: string;
+            size?: number;
+            url: string;
+          }>;
+          pageStatus?: null | "SplitRecommended" | "SplitRequired";
+          splitCursor?: null | string;
+        }
+      >;
+      syncMetadata: FunctionReference<
         "action",
         "internal",
         {
           accessKeyId: string;
           bucket: string;
           endpoint: string;
+          key: string;
           secretAccessKey: string;
-          url: string;
         },
-        any
+        null
       >;
     };
   };

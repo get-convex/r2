@@ -1,128 +1,102 @@
-import "./App.css";
-import { useAction, useMutation, useQuery } from "convex/react";
-import { FormEvent, useRef, useState } from "react";
 import { api } from "../convex/_generated/api";
+import { useUploadFile } from "@convex-dev/r2/react";
+import { Upload } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useMutation, usePaginatedQuery, useQuery } from "convex/react";
+import { useDebouncedCallback } from "use-debounce";
+import { Id } from "../convex/_generated/dataModel";
+import { Separator } from "@/components/ui/separator";
+import { MetadataTable } from "./MetadataTable";
+import { GalleryImage } from "@/GalleryImage";
 
-// Set to true to use HTTP Action instead of signed URL
-const GET_VIA_HTTP = true;
-const SEND_VIA_HTTP = true;
-
-export function App() {
-  const generateUploadUrl = useAction(api.example.generateUploadUrl);
-  const sendImage = useMutation(api.example.sendImage);
-  const deleteImage = useAction(api.example.deleteImage);
-  const images = useQuery(api.example.getRecentImages);
-  const imageInput = useRef<HTMLInputElement>(null);
-  const [sending, setSending] = useState(false);
-  const [selectedImage, setSelectedImage] = useState<File | null>(null);
-
-  const [name] = useState(() => "User " + Math.floor(Math.random() * 10000));
-
-  async function handleSendImageViaSignedUrl(event: FormEvent) {
-    event.preventDefault();
-    setSending(true);
-    // Step 1: Get a short-lived upload URL
-    const { url, key } = await generateUploadUrl();
-    // Step 2: PUT the file to the URL
-    try {
-      const result = await fetch(url, {
-        method: "PUT",
-        headers: { "Content-Type": selectedImage!.type },
-        body: selectedImage,
-      });
-      if (!result.ok) {
-        setSending(false);
-        throw new Error(`Failed to upload image: ${result.statusText}`);
-      }
-    } catch (error) {
-      setSending(false);
-      throw new Error(`Failed to upload image: ${error}`);
+export default function App() {
+  // Returns a function that uploads the file to R2, syncs metadata to the
+  // Convex database, and returns the key of the uploaded file in case you need
+  // it.
+  const uploadFile = useUploadFile(api.example);
+  const updateImageCaption = useMutation(
+    api.example.updateImageCaption
+  ).withOptimisticUpdate((localStore, args) => {
+    // A small optimistic update function to synchronously update the UI while
+    // the mutation is pending.
+    const images = localStore.getQuery(api.example.listImages);
+    const image = images?.find((image) => image._id === args.id);
+    if (image) {
+      image.caption = args.caption;
     }
-    // Step 3: Save the newly allocated storage id to the database
-    await sendImage({ key, author: name });
-    setSending(false);
-    setSelectedImage(null);
-    imageInput.current!.value = "";
+  });
+  const deleteImage = useMutation(api.example.deleteObject);
+
+  // Get images from your app's own `images` table
+  const images = useQuery(api.example.listImages, {});
+
+  // Get metadata from the R2 component's `metadata` table
+  const metadata = usePaginatedQuery(
+    api.example.listMetadata,
+    {},
+    { initialNumItems: 20 }
+  );
+
+  async function handleUpload(event: React.ChangeEvent<HTMLInputElement>) {
+    event.preventDefault();
+    // `uploadFile` returns the key of the uploaded file, which you can use to
+    // associate the file with some other data, like a message.
+    const key = await uploadFile(event.target.files![0]);
   }
 
-  async function handleSendImageViaHttp(event: FormEvent) {
-    event.preventDefault();
-    setSending(true);
-
-    const sendImageUrl = new URL(
-      // Use Convex Action URL
-      "https://giant-kangaroo-636.convex.site/r2/send"
-    );
-    sendImageUrl.searchParams.set("author", name);
-
-    try {
-      const result = await fetch(sendImageUrl, {
-        method: "POST",
-        headers: { "Content-Type": selectedImage!.type },
-        body: selectedImage,
-      });
-      if (!result.ok) {
-        setSending(false);
-        throw new Error(`Failed to upload image: ${result.statusText}`);
-      }
-    } catch (error) {
-      setSending(false);
-      throw new Error(`Failed to upload image: ${error}`);
-    }
-
-    setSending(false);
-    setSelectedImage(null);
-    imageInput.current!.value = "";
-  }
+  // Debounce the updateImageCaption mutation to avoid blocking input changes.
+  // Persists whenever the user stops typing for 500ms.
+  const debouncedUpdateImageCaption = useDebouncedCallback(
+    (id: Id<"images">, caption: string) => {
+      void updateImageCaption({ id, caption });
+    },
+    500
+  );
 
   return (
-    <>
-      <h1>Convex R2 Component Example</h1>
-      <div className="card">
-        <form
-          onSubmit={
-            SEND_VIA_HTTP ? handleSendImageViaHttp : handleSendImageViaSignedUrl
-          }
-        >
-          <input
-            type="file"
-            accept="image/*"
-            ref={imageInput}
-            onChange={(event) => setSelectedImage(event.target.files![0])}
-            disabled={selectedImage !== null}
-          />
-          <input
-            type="submit"
-            value={sending ? "Sending..." : "Send Image"}
-            disabled={sending || selectedImage === null}
-          />
-        </form>
-        <div>
-          {images?.map((image) => (
-            <div key={image._id} className="image-row">
-              <p>{image.author}</p>
-              <img
-                src={
-                  GET_VIA_HTTP
-                    ? `https://giant-kangaroo-636.convex.site/r2/get/${image.key}`
-                    : image.url
-                }
-                alt={image.author}
-                width={80}
-              />
-              <button onClick={() => deleteImage({ key: image.key })}>
-                Delete
-              </button>
-            </div>
-          ))}
-        </div>
-        <p>
-          See <code>example/convex/example.ts</code> for all the ways to use
-          this component
-        </p>
+    <div className="container mx-auto p-4">
+      <h1 className="text-2xl font-bold my-4">Image Gallery</h1>
+
+      <div className="mb-4">
+        <Button variant="outline" className="gap-2" asChild>
+          <label htmlFor="image-upload" className="cursor-pointer">
+            <Upload size={20} />
+            Upload Image
+          </label>
+        </Button>
+        <input
+          id="image-upload"
+          type="file"
+          accept="image/*"
+          onChange={handleUpload}
+          className="hidden"
+        />
       </div>
-    </>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {images?.map((image) => (
+          <GalleryImage
+            key={image._id}
+            image={image}
+            onDelete={(key) => void deleteImage({ key })}
+            onUpdateCaption={(id, caption) =>
+              debouncedUpdateImageCaption(id, caption)
+            }
+          />
+        ))}
+      </div>
+
+      <Separator className="my-12" />
+
+      <h1 className="text-2xl font-bold mb-4">R2 Admin</h1>
+
+      <div className="mb-4">
+        <MetadataTable data={metadata.results ?? []} />
+        {metadata.status === "CanLoadMore" && (
+          <Button variant="outline" onClick={() => metadata.loadMore(10)}>
+            Load More
+          </Button>
+        )}
+      </div>
+    </div>
   );
 }
-
-export default App;
