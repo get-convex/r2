@@ -84,6 +84,17 @@ export class R2 {
       secretAccessKey:
         options?.R2_SECRET_ACCESS_KEY ?? process.env.R2_SECRET_ACCESS_KEY!,
     };
+    if (
+      !this.r2Config.bucket ||
+      !this.r2Config.endpoint ||
+      !this.r2Config.accessKeyId ||
+      !this.r2Config.secretAccessKey
+    ) {
+      throw new Error(
+        "R2 configuration is missing required fields.\n" +
+          "R2_BUCKET, R2_ENDPOINT, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY"
+      );
+    }
     this.r2 = createR2Client(this.r2Config);
   }
   /**
