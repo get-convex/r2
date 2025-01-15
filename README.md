@@ -6,6 +6,17 @@
 
 Store and serve files with Cloudflare R2.
 
+```ts
+// Upload files from React
+const uploadFile = useUploadFile(api.example);
+// ...in a callback
+const key = await uploadFile(file);
+
+// Access files on the server
+const url = await r2.getUrl(key);
+const response = await fetch(url);
+```
+
 ## Prerequisites
 
 ### Cloudflare Account
@@ -15,21 +26,14 @@ Store and serve files with Cloudflare R2.
 - Set the bucket name as an environment variable `R2_BUCKET` in your Convex
   deployment
 - [Add a CORS policy](https://developers.cloudflare.com/r2/buckets/cors/#add-cors-policies-from-the-dashboard) to the bucket allowing GET and PUT requests from your
-  Convex app. You can also use '*' to allow all origins (use with caution).
+  Convex app. You can also use '\*' to allow all origins (use with caution).
   ```json
-   [
-      {
-        "AllowedOrigins": [
-          "http://localhost:5173"
-        ],
-        "AllowedMethods": [
-          "GET",
-          "PUT"
-        ],
-        "AllowedHeaders": [
-          "Content-Type"
-        ]
-      }
+  [
+    {
+      "AllowedOrigins": ["http://localhost:5173"],
+      "AllowedMethods": ["GET", "PUT"],
+      "AllowedHeaders": ["Content-Type"]
+    }
   ]
   ```
 - Create an API token
