@@ -97,45 +97,22 @@ export type Mounts = {
       {
         accessKeyId: string;
         bucket: string;
+        cursor?: string;
         endpoint: string;
         limit?: number;
         secretAccessKey: string;
-      },
-      Array<{
-        bucket: string;
-        contentType?: string;
-        key: string;
-        lastModified: string;
-        sha256?: string;
-        size?: number;
-        url: string;
-      }>
-    >;
-    pageMetadata: FunctionReference<
-      "query",
-      "public",
-      {
-        bucket: string;
-        paginationOpts: {
-          cursor: string | null;
-          endCursor?: string | null;
-          id?: number;
-          maximumBytesRead?: number;
-          maximumRowsRead?: number;
-          numItems: number;
-        };
       },
       {
         continueCursor: string;
         isDone: boolean;
         page: Array<{
-          _creationTime: number;
           bucket: string;
           contentType?: string;
           key: string;
           lastModified: string;
           sha256?: string;
           size?: number;
+          url: string;
         }>;
         pageStatus?: null | "SplitRecommended" | "SplitRequired";
         splitCursor?: null | string;

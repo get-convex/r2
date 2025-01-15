@@ -13,7 +13,6 @@ export const {
   // the permission check callbacks.
   getMetadata,
   listMetadata,
-  pageMetadata,
   deleteObject,
 } = r2.clientApi<DataModel>({
   // The checkUpload callback is used for both `generateUploadUrl` and

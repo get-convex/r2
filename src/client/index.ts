@@ -146,23 +146,11 @@ export class R2 {
    * @param limit (optional) - The maximum number of documents to return.
    * @returns A promise that resolves to an array of metadata documents.
    */
-  async listMetadata(ctx: RunQueryCtx, limit?: number) {
+  async listMetadata(ctx: RunQueryCtx, limit?: number, cursor?: string | null) {
     return ctx.runQuery(this.component.lib.listMetadata, {
       ...this.r2Config,
       limit: limit,
-    });
-  }
-  /**
-   * Retrieve paginated metadata from Convex for a given bucket.
-   *
-   * @param ctx - A Convex query context.
-   * @param paginationOpts - The pagination options.
-   * @returns A promise that resolves to a paginated list of metadata documents.
-   */
-  async pageMetadata(ctx: RunQueryCtx, paginationOpts: PaginationOptions) {
-    return ctx.runQuery(this.component.lib.pageMetadata, {
-      bucket: this.r2Config.bucket,
-      paginationOpts,
+      cursor: cursor ?? undefined,
     });
   }
   /**
@@ -300,10 +288,8 @@ export class R2 {
        * Retrieve all metadata for a given bucket from Convex.
        */
       listMetadata: queryGeneric({
-        args: {
-          limit: v.optional(v.number()),
-        },
-        returns: v.array(
+        args: { paginationOpts: paginationOptsValidator },
+        returns: paginationReturnValidator(
           v.object({
             ...schema.tables.metadata.validator.fields,
             url: v.string(),
@@ -313,27 +299,11 @@ export class R2 {
           if (opts?.checkReadBucket) {
             await opts.checkReadBucket(ctx, this.r2Config.bucket);
           }
-          return this.listMetadata(ctx, args.limit);
-        },
-      }),
-      /**
-       * Retrieve paginated metadata for a given bucket from Convex.
-       */
-      pageMetadata: queryGeneric({
-        args: {
-          paginationOpts: paginationOptsValidator,
-        },
-        returns: paginationReturnValidator(
-          v.object({
-            _creationTime: v.number(),
-            ...schema.tables.metadata.validator.fields,
-          })
-        ),
-        handler: async (ctx, args) => {
-          if (opts?.checkReadBucket) {
-            await opts.checkReadBucket(ctx, this.r2Config.bucket);
-          }
-          return this.pageMetadata(ctx, args.paginationOpts);
+          return this.listMetadata(
+            ctx,
+            args.paginationOpts.numItems,
+            args.paginationOpts.cursor
+          );
         },
       }),
       /**

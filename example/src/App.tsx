@@ -2,7 +2,7 @@ import { api } from "../convex/_generated/api";
 import { useUploadFile } from "@convex-dev/r2/react";
 import { Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation, usePaginatedQuery, useQuery } from "convex/react";
 import { useDebouncedCallback } from "use-debounce";
 import { Id } from "../convex/_generated/dataModel";
 import { Separator } from "@/components/ui/separator";
@@ -31,7 +31,11 @@ export default function App() {
   const images = useQuery(api.example.listImages, {});
 
   // Get metadata from the R2 component's `metadata` table
-  const metadata = useQuery(api.example.listMetadata, {});
+  const metadata = usePaginatedQuery(
+    api.example.listMetadata,
+    {},
+    { initialNumItems: 20 }
+  );
 
   async function handleUpload(event: React.ChangeEvent<HTMLInputElement>) {
     event.preventDefault();
@@ -86,7 +90,12 @@ export default function App() {
       <h1 className="text-2xl font-bold mb-4">R2 Admin</h1>
 
       <div className="mb-4">
-        <MetadataTable data={metadata ?? []} />
+        <MetadataTable data={metadata.results ?? []} />
+        {metadata.status === "CanLoadMore" && (
+          <Button variant="outline" onClick={() => metadata.loadMore(10)}>
+            Load More
+          </Button>
+        )}
       </div>
     </div>
   );

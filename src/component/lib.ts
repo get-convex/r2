@@ -17,8 +17,10 @@ import { api, components } from "./_generated/api";
 import { paginationOptsValidator } from "convex/server";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { asyncMap } from "convex-helpers";
+import { paginator } from "convex-helpers/server/pagination";
 import { ActionRetrier } from "@convex-dev/action-retrier";
 
+const DEFAULT_LIST_LIMIT = 100;
 const retrier = new ActionRetrier(components.actionRetrier);
 
 const getUrl = async (r2: S3Client, bucket: string, key: string) => {
@@ -62,50 +64,31 @@ export const getMetadata = query({
 export const listMetadata = query({
   args: {
     limit: v.optional(v.number()),
+    cursor: v.optional(v.string()),
     ...r2ConfigValidator.fields,
   },
-  returns: v.array(
+  returns: paginationReturnValidator(
     v.object({
       ...schema.tables.metadata.validator.fields,
       url: v.string(),
     })
   ),
   handler: async (ctx, args) => {
-    const { limit, ...r2Config } = args;
+    const { limit, cursor, ...r2Config } = args;
     const r2 = createR2Client(r2Config);
-    const listQuery = ctx.db
+    const results = await paginator(ctx.db, schema)
       .query("metadata")
-      .withIndex("bucket", (q) => q.eq("bucket", r2Config.bucket));
-    const list =
-      typeof limit === "number"
-        ? await listQuery.take(limit)
-        : await listQuery.collect();
-    return asyncMap(list, async (doc) => ({
-      ...withoutSystemFields(doc),
-      url: await getUrl(r2, r2Config.bucket, doc.key),
-    }));
-  },
-});
-
-export const pageMetadata = query({
-  args: {
-    bucket: v.string(),
-    paginationOpts: paginationOptsValidator,
-  },
-  returns: paginationReturnValidator(
-    v.object({
-      _creationTime: v.number(),
-      ...schema.tables.metadata.validator.fields,
-    })
-  ),
-  handler: async (ctx, args) => {
-    const result = await ctx.db
-      .query("metadata")
-      .withIndex("bucket", (q) => q.eq("bucket", args.bucket))
-      .paginate(args.paginationOpts);
+      .withIndex("bucket", (q) => q.eq("bucket", r2Config.bucket))
+      .paginate({
+        numItems: limit ?? DEFAULT_LIST_LIMIT,
+        cursor: cursor ?? null,
+      });
     return {
-      ...result,
-      page: result.page.map(({ _id, ...doc }) => doc),
+      ...results,
+      page: await asyncMap(results.page, async (doc) => ({
+        ...withoutSystemFields(doc),
+        url: await getUrl(r2, r2Config.bucket, doc.key),
+      })),
     };
   },
 });
