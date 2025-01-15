@@ -17,6 +17,8 @@ const url = await r2.getUrl(key);
 const response = await fetch(url);
 ```
 
+**Check out the [example app](example) for a complete example.**
+
 ## Prerequisites
 
 ### Cloudflare Account
