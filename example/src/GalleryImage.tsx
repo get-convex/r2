@@ -2,7 +2,7 @@ import { api } from "../convex/_generated/api";
 import { X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Id } from "../convex/_generated/dataModel";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export const GalleryImage = ({
   image,
@@ -15,12 +15,19 @@ export const GalleryImage = ({
   onUpdateCaption: (id: Id<"images">, caption: string) => void;
 }) => {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [inputIsFocused, setInputIsFocused] = useState(false);
   const [caption, setCaption] = useState(image.caption);
 
   const handleUpdateCaption = (e: React.ChangeEvent<HTMLInputElement>) => {
     setCaption(e.target.value);
     onUpdateCaption(image._id, e.target.value);
   };
+
+  useEffect(() => {
+    if (!inputIsFocused) {
+      setCaption(image.caption);
+    }
+  }, [image.caption, inputIsFocused]);
 
   return (
     <div key={image._id} className="relative group rounded-lg overflow-hidden">
@@ -50,6 +57,12 @@ export const GalleryImage = ({
           placeholder="Add a caption"
           className="w-full text-white placeholder:text-white placeholder:text-opacity-60 bg-transparent border-none focus:outline-none focus:ring-0"
           aria-label="Image caption"
+          onFocus={() => {
+            setInputIsFocused(true);
+          }}
+          onBlur={() => {
+            setInputIsFocused(false);
+          }}
         />
       </div>
     </div>

@@ -45,12 +45,14 @@ export default function App() {
   }
 
   // Debounce the updateImageCaption mutation to avoid blocking input changes.
-  // Persists whenever the user stops typing for 500ms.
   const debouncedUpdateImageCaption = useDebouncedCallback(
     (id: Id<"images">, caption: string) => {
       void updateImageCaption({ id, caption });
     },
-    500
+    100,
+    {
+      maxWait: 100,
+    }
   );
 
   return (
