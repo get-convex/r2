@@ -39,6 +39,7 @@ export const getMetadata = query({
     v.object({
       ...schema.tables.metadata.validator.fields,
       url: v.string(),
+      bucketLink: v.string(),
     }),
     v.null()
   ),
@@ -57,6 +58,7 @@ export const getMetadata = query({
     return {
       ...withoutSystemFields(metadata),
       url: await getUrl(r2, r2Config.bucket, key),
+      bucketLink: metadata.link.replace(/\/objects\/.*\/details$/, ""),
     };
   },
 });
@@ -71,6 +73,7 @@ export const listMetadata = query({
     v.object({
       ...schema.tables.metadata.validator.fields,
       url: v.string(),
+      bucketLink: v.string(),
     })
   ),
   handler: async (ctx, args) => {
@@ -88,13 +91,14 @@ export const listMetadata = query({
       page: await asyncMap(results.page, async (doc) => ({
         ...withoutSystemFields(doc),
         url: await getUrl(r2, r2Config.bucket, doc.key),
+        bucketLink: doc.link.replace(/\/objects\/.*$/, ""),
       })),
     };
   },
 });
 
 export const insertMetadata = mutation({
-  args: schema.tables.metadata.validator,
+  args: schema.tables.metadata.validator.fields,
   returns: v.null(),
   handler: async (ctx, args) => {
     await ctx.db.insert("metadata", {
@@ -104,6 +108,7 @@ export const insertMetadata = mutation({
       sha256: args.sha256,
       bucket: args.bucket,
       lastModified: args.lastModified,
+      link: args.link,
     });
   },
 });
@@ -122,6 +127,9 @@ export const syncMetadata = action({
       Key: key,
     });
     const response = await r2.send(command);
+
+    const accountId = /\/{2}([^/.]+)\./.exec(r2Config.endpoint)?.[1] ?? "";
+    const link = `https://dash.cloudflare.com/${accountId}/r2/default/buckets/${r2Config.bucket}/objects/${key}/details`;
     await ctx.runMutation(api.lib.insertMetadata, {
       key,
       lastModified: response.LastModified?.toISOString() ?? "",
@@ -129,6 +137,7 @@ export const syncMetadata = action({
       size: response.ContentLength,
       sha256: response.ChecksumSHA256,
       bucket: r2Config.bucket,
+      link,
     });
   },
 });

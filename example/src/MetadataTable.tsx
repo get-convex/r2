@@ -39,6 +39,13 @@ const columns: ColumnDef<
         </Button>
       );
     },
+    cell: ({ row }) => {
+      return (
+        <a href={row.original.bucketLink} target="_blank" className="underline">
+          {row.original.bucket}
+        </a>
+      );
+    },
   },
   {
     accessorKey: "image",
@@ -56,6 +63,13 @@ const columns: ColumnDef<
   {
     accessorKey: "key",
     header: "Key",
+    cell: ({ row }) => {
+      return (
+        <a href={row.original.link} target="_blank" className="underline">
+          {row.original.key}
+        </a>
+      );
+    },
   },
   {
     accessorKey: "size",

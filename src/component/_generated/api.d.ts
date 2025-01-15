@@ -70,9 +70,11 @@ export type Mounts = {
       },
       {
         bucket: string;
+        bucketLink: string;
         contentType?: string;
         key: string;
         lastModified: string;
+        link: string;
         sha256?: string;
         size?: number;
         url: string;
@@ -86,6 +88,7 @@ export type Mounts = {
         contentType?: string;
         key: string;
         lastModified: string;
+        link: string;
         sha256?: string;
         size?: number;
       },
@@ -107,9 +110,11 @@ export type Mounts = {
         isDone: boolean;
         page: Array<{
           bucket: string;
+          bucketLink: string;
           contentType?: string;
           key: string;
           lastModified: string;
+          link: string;
           sha256?: string;
           size?: number;
           url: string;

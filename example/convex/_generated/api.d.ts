@@ -82,9 +82,11 @@ export declare const components: {
         },
         {
           bucket: string;
+          bucketLink: string;
           contentType?: string;
           key: string;
           lastModified: string;
+          link: string;
           sha256?: string;
           size?: number;
           url: string;
@@ -98,6 +100,7 @@ export declare const components: {
           contentType?: string;
           key: string;
           lastModified: string;
+          link: string;
           sha256?: string;
           size?: number;
         },
@@ -119,9 +122,11 @@ export declare const components: {
           isDone: boolean;
           page: Array<{
             bucket: string;
+            bucketLink: string;
             contentType?: string;
             key: string;
             lastModified: string;
+            link: string;
             sha256?: string;
             size?: number;
             url: string;

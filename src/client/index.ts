@@ -274,6 +274,7 @@ export class R2 {
           v.object({
             ...schema.tables.metadata.validator.fields,
             url: v.string(),
+            bucketLink: v.string(),
           }),
           v.null()
         ),
@@ -293,6 +294,7 @@ export class R2 {
           v.object({
             ...schema.tables.metadata.validator.fields,
             url: v.string(),
+            bucketLink: v.string(),
           })
         ),
         handler: async (ctx, args) => {

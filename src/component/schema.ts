@@ -9,6 +9,7 @@ export default defineSchema({
     size: v.optional(v.number()),
     bucket: v.string(),
     lastModified: v.string(),
+    link: v.string(),
   })
     .index("bucket", ["bucket"])
     .index("bucket_key", ["bucket", "key"]),
