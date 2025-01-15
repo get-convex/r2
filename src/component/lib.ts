@@ -14,7 +14,6 @@ import {
   withoutSystemFields,
 } from "../shared";
 import { api, components } from "./_generated/api";
-import { paginationOptsValidator } from "convex/server";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { asyncMap } from "convex-helpers";
 import { paginator } from "convex-helpers/server/pagination";

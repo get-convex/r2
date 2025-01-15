@@ -14,6 +14,23 @@ Store and serve files with Cloudflare R2.
 - [Create an R2 bucket](https://developers.cloudflare.com/r2/buckets/create-buckets/)
 - Set the bucket name as an environment variable `R2_BUCKET` in your Convex
   deployment
+- [Add a CORS policy](https://developers.cloudflare.com/r2/buckets/cors/#add-cors-policies-from-the-dashboard) to the bucket allowing GET and PUT requests from your
+  Convex app. You can also use '*' to allow all origins (use with caution).
+  ```json
+   [
+      {
+        "AllowedOrigins": [
+          "http://localhost:5173"
+        ],
+        "AllowedMethods": [
+          "GET",
+          "PUT"
+        ],
+        "AllowedHeaders": [
+          "Content-Type"
+        ]
+      }
+  ]```
 - Create an API token
   - On the main R2 page in your Cloudflare dashboard, click **Manage R2 API
     Tokens**
