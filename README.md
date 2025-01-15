@@ -30,7 +30,8 @@ Store and serve files with Cloudflare R2.
           "Content-Type"
         ]
       }
-  ]```
+  ]
+  ```
 - Create an API token
   - On the main R2 page in your Cloudflare dashboard, click **Manage R2 API
     Tokens**
