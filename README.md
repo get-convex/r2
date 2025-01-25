@@ -293,5 +293,6 @@ export const page = query({
     return r2.pageMetadata(ctx, args.paginationOpts);
   },
 });
+```
 
 <!-- END: Include on https://convex.dev/components -->
