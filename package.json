@@ -7,7 +7,7 @@
     "email": "support@convex.dev",
     "url": "https://github.com/get-convex/r2/issues"
   },
-  "version": "0.2.0",
+  "version": "0.2.1",
   "license": "Apache-2.0",
   "keywords": [
     "convex",
@@ -67,7 +67,7 @@
     }
   },
   "peerDependencies": {
-    "convex": "~1.16.5 || ~1.17.0",
+    "convex": "~1.16.5 || >=1.17.0 <1.25.0",
     "react": "^18.3.1"
   },
   "devDependencies": {
