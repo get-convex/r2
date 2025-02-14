@@ -92,77 +92,78 @@ npx convex env set R2_BUCKET xxxxx
 
 File uploads to R2 typically use signed urls. The R2 component provides a React
 hook that handles the entire upload processs:
+
 - generates the signed url
 - uploads the file to R2
 - stores the file's metadata in your Convex database
 
 1. Instantiate a R2 component client in a file in your app's `convex/` folder:
-```ts
-// convex/example.ts
-import { R2 } from "@convex-dev/r2";
-import { components } from "./_generated/api";
 
-export const r2 = new R2(components.r2);
+   ```ts
+   // convex/example.ts
+   import { R2 } from "@convex-dev/r2";
+   import { components } from "./_generated/api";
 
-export const { generateUploadUrl, syncMetadata } = r2.clientApi({
-  checkUpload: async (ctx, bucket) => {
-    // const user = await userFromAuth(ctx);
-    // ...validate that the user can upload to this bucket
-  },
-  onUpload: async (ctx, key) => {
-    // ...do something with the key
-    // Runs in the `syncMetadata` mutation, as the upload is performed from the
-    // client side. Convenient way to create relations between the newly created
-    // object key and other data in your Convex database. Runs after the `checkUpload`
-    // callback.
-  },
-});
-```
+   export const r2 = new R2(components.r2);
+
+   export const { generateUploadUrl, syncMetadata } = r2.clientApi({
+     checkUpload: async (ctx, bucket) => {
+       // const user = await userFromAuth(ctx);
+       // ...validate that the user can upload to this bucket
+     },
+     onUpload: async (ctx, key) => {
+       // ...do something with the key
+       // Runs in the `syncMetadata` mutation, as the upload is performed from the
+       // client side. Convenient way to create relations between the newly created
+       // object key and other data in your Convex database. Runs after the `checkUpload`
+       // callback.
+     },
+   });
+   ```
 
 2. Use the `useUploadFile` hook in a React component to upload files:
 
-```tsx
-// src/App.tsx
-import { FormEvent, useRef, useState } from "react";
-import { useAction } from "convex/react";
-import { api } from "../convex/_generated/api";
-import { useUploadFile } from "@convex-dev/r2/react";
+   ```tsx
+   // src/App.tsx
+   import { FormEvent, useRef, useState } from "react";
+   import { useAction } from "convex/react";
+   import { api } from "../convex/_generated/api";
+   import { useUploadFile } from "@convex-dev/r2/react";
 
-export default function App() {
+   export default function App() {
+     // Passing the entire api exported from `convex/example.ts` to the hook.
+     // This must include `generateUploadUrl` and `syncMetadata` from the r2 client api.
+     const uploadFile = useUploadFile(api.example);
+     const imageInput = useRef<HTMLInputElement>(null);
+     const [selectedImage, setSelectedImage] = useState<File | null>(null);
 
-  // Passing the entire api exported from `convex/example.ts` to the hook.
-  // This must include `generateUploadUrl` and `syncMetadata` from the r2 client api.
-  const uploadFile = useUploadFile(api.example);
-  const imageInput = useRef<HTMLInputElement>(null);
-  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+     async function handleUpload(event: FormEvent) {
+       event.preventDefault();
 
-  async function handleUpload(event: FormEvent) {
-    event.preventDefault();
-
-    // The file is uploaded to R2, metadata is synced to the database, and the
-    // key of the newly created object is returned.
-    await uploadFile(selectedImage!);
-    setSelectedImage(null);
-    imageInput.current!.value = "";
-  }
-  return (
-    <form onSubmit={handleUpload}>
-      <input
-        type="file"
-        accept="image/*"
-        ref={imageInput}
-        onChange={(event) => setSelectedImage(event.target.files![0])}
-        disabled={selectedImage !== null}
-      />
-      <input
-        type="submit"
-        value="Upload"
-        disabled={selectedImage === null}
-      />
-    </form>
-  );
-}
-```
+       // The file is uploaded to R2, metadata is synced to the database, and the
+       // key of the newly created object is returned.
+       await uploadFile(selectedImage!);
+       setSelectedImage(null);
+       imageInput.current!.value = "";
+     }
+     return (
+       <form onSubmit={handleUpload}>
+         <input
+           type="file"
+           accept="image/*"
+           ref={imageInput}
+           onChange={event => setSelectedImage(event.target.files![0])}
+           disabled={selectedImage !== null}
+         />
+         <input
+           type="submit"
+           value="Upload"
+           disabled={selectedImage === null}
+         />
+       </form>
+     );
+   }
+   ```
 
 ### Using a custom object key
 
