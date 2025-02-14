@@ -164,6 +164,37 @@ export default function App() {
 }
 ```
 
+### Using a custom object key
+
+The `r2.generateUploadUrl` function generates a uuid to use as the object key by
+default, but a custom key can be provided if desired. Note: the `generateUploadUrl`
+function returned by `r2.clientApi` does not accept a custom key, as that
+function is a mutation to be called from the client side and you don't want your
+client defining your object keys. Providing a custom key requires making your
+own mutation that calls the `generateUploadUrl` method of the `r2` instance.
+
+```ts
+// convex/example.ts
+import { R2 } from "@convex-dev/r2";
+import { components } from "./_generated/api";
+
+export const r2 = new R2(components.r2);
+
+// A custom mutation that creates a key from the user id and a uuid
+export const generateUploadUrlWithCustomKey = mutation({
+  args: {},
+  handler: async (ctx) => {
+    // Replace this with whatever function you use to get the current user
+    const currentUser = await getUser(ctx);
+    if (!currentUser) {
+      throw new Error("User not found");
+    }
+    const key = `${currentUser.id}.${crypto.randomUUID()}`;
+    return r2.generateUploadUrl(key);
+  },
+});
+```
+
 ## Serving Files
 Files stored in R2 can be served to your users by generating a URL pointing to a given file.
 
