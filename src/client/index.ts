@@ -92,7 +92,7 @@ export class R2 {
     ) {
       throw new Error(
         "R2 configuration is missing required fields.\n" +
-          "R2_BUCKET, R2_ENDPOINT, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY"
+        "R2_BUCKET, R2_ENDPOINT, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY"
       );
     }
     this.r2 = createR2Client(this.r2Config);
@@ -116,8 +116,8 @@ export class R2 {
    *   - `key` - The R2 object key.
    *   - `url` - A signed URL for uploading the object.
    */
-  async generateUploadUrl() {
-    const key = crypto.randomUUID();
+  async generateUploadUrl(customKey?: string) {
+    const key = customKey ? customKey : crypto.randomUUID();
     const url = await getSignedUrl(
       this.r2,
       new PutObjectCommand({ Bucket: this.r2Config.bucket, Key: key })
@@ -348,12 +348,12 @@ export class R2 {
 
 export type OpaqueIds<T> =
   T extends GenericId<infer _T>
-    ? string
-    : T extends (infer U)[]
-      ? OpaqueIds<U>[]
-      : T extends object
-        ? { [K in keyof T]: OpaqueIds<T[K]> }
-        : T;
+  ? string
+  : T extends (infer U)[]
+  ? OpaqueIds<U>[]
+  : T extends object
+  ? { [K in keyof T]: OpaqueIds<T[K]> }
+  : T;
 
 export type UseApi<API> = Expand<{
   [mod in keyof API]: API[mod] extends FunctionReference<
@@ -363,12 +363,12 @@ export type UseApi<API> = Expand<{
     infer FReturnType,
     infer FComponentPath
   >
-    ? FunctionReference<
-        FType,
-        "internal",
-        OpaqueIds<FArgs>,
-        OpaqueIds<FReturnType>,
-        FComponentPath
-      >
-    : UseApi<API[mod]>;
+  ? FunctionReference<
+    FType,
+    "internal",
+    OpaqueIds<FArgs>,
+    OpaqueIds<FReturnType>,
+    FComponentPath
+  >
+  : UseApi<API[mod]>;
 }>;
