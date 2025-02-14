@@ -112,12 +112,13 @@ export class R2 {
   /**
    * Generate a signed URL for uploading an object to R2.
    *
+   * @param customKey (optional) - A custom R2 object key to use.
    * @returns A promise that resolves to an object with the following fields:
    *   - `key` - The R2 object key.
    *   - `url` - A signed URL for uploading the object.
    */
-  async generateUploadUrl() {
-    const key = crypto.randomUUID();
+  async generateUploadUrl(customKey?: string) {
+    const key = customKey || crypto.randomUUID();
     const url = await getSignedUrl(
       this.r2,
       new PutObjectCommand({ Bucket: this.r2Config.bucket, Key: key })
