@@ -123,6 +123,18 @@ export type Mounts = {
         splitCursor?: null | string;
       }
     >;
+    store: FunctionReference<
+      "action",
+      "public",
+      {
+        accessKeyId: string;
+        bucket: string;
+        endpoint: string;
+        secretAccessKey: string;
+        url: string;
+      },
+      any
+    >;
     syncMetadata: FunctionReference<
       "action",
       "public",

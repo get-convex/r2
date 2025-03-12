@@ -5,6 +5,7 @@ import {
   DeleteObjectCommand,
   GetObjectCommand,
   HeadObjectCommand,
+  PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
 import {
@@ -28,6 +29,27 @@ const getUrl = async (r2: S3Client, bucket: string, key: string) => {
     new GetObjectCommand({ Bucket: bucket, Key: key })
   );
 };
+
+export const store = action({
+  args: {
+    ...r2ConfigValidator.fields,
+    url: v.string(),
+  },
+  handler: async (_ctx, args) => {
+    const r2 = createR2Client(args);
+    const response = await fetch(args.url);
+    const blob = await response.blob();
+    const key = crypto.randomUUID();
+    const command = new PutObjectCommand({
+      Bucket: args.bucket,
+      Key: key,
+      Body: blob,
+      ContentType: response.headers.get("Content-Type") ?? undefined,
+    });
+    await r2.send(command);
+    return key;
+  },
+});
 
 export const getMetadata = query({
   args: {

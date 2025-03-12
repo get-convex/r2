@@ -1,6 +1,6 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
-import { components } from "./_generated/api";
+import { internalAction, internalMutation, mutation, query } from "./_generated/server";
+import { components, internal } from "./_generated/api";
 import { R2 } from "@convex-dev/r2";
 import { DataModel } from "./_generated/dataModel";
 const r2 = new R2(components.r2);
@@ -85,5 +85,32 @@ export const updateImageCaption = mutation({
     await ctx.db.patch(args.id, {
       caption: args.caption,
     });
+  },
+});
+
+export const insertImage = internalMutation({
+  args: {
+    key: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.insert("images", { key: args.key, bucket: r2.config.bucket });
+  },
+});
+
+// Insert an image server side (the insertImage mutation is just an example use
+// case, not required). When running the example app, you can run `npx convex run
+// example:store` (or run it in the dashboard) to insert an image this way.
+export const store = internalAction({
+  handler: async (ctx) => {
+    // Download a random image from picsum.photos
+    const url = 'https://picsum.photos/200/300'
+    const response = await fetch(url);
+    const blob = await response.blob();
+
+    // This function call is the only required part, it uploads the blob to R2,
+    // syncs the metadata, and returns the key.
+    const key =await r2.store(ctx, blob);
+
+    await ctx.runMutation(internal.example.insertImage, { key });
   },
 });
