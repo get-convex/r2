@@ -135,6 +135,18 @@ export declare const components: {
           splitCursor?: null | string;
         }
       >;
+      store: FunctionReference<
+        "action",
+        "internal",
+        {
+          accessKeyId: string;
+          bucket: string;
+          endpoint: string;
+          secretAccessKey: string;
+          url: string;
+        },
+        any
+      >;
       syncMetadata: FunctionReference<
         "action",
         "internal",

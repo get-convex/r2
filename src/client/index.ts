@@ -7,7 +7,6 @@ import {
   GenericMutationCtx,
   GenericQueryCtx,
   mutationGeneric,
-  PaginationOptions,
   paginationOptsValidator,
   queryGeneric,
 } from "convex/server";
@@ -41,7 +40,7 @@ type RunActionCtx = {
 };
 
 export class R2 {
-  public readonly r2Config: Infer<typeof r2ConfigValidator>;
+  public readonly config: Infer<typeof r2ConfigValidator>;
   public readonly r2: S3Client;
   /**
    * Backend API for the R2 component.
@@ -77,7 +76,7 @@ export class R2 {
       defaultBatchSize?: number;
     } = {}
   ) {
-    this.r2Config = {
+    this.config = {
       bucket: options?.R2_BUCKET ?? process.env.R2_BUCKET!,
       endpoint: options?.R2_ENDPOINT ?? process.env.R2_ENDPOINT!,
       accessKeyId: options?.R2_ACCESS_KEY_ID ?? process.env.R2_ACCESS_KEY_ID!,
@@ -85,17 +84,17 @@ export class R2 {
         options?.R2_SECRET_ACCESS_KEY ?? process.env.R2_SECRET_ACCESS_KEY!,
     };
     if (
-      !this.r2Config.bucket ||
-      !this.r2Config.endpoint ||
-      !this.r2Config.accessKeyId ||
-      !this.r2Config.secretAccessKey
+      !this.config.bucket ||
+      !this.config.endpoint ||
+      !this.config.accessKeyId ||
+      !this.config.secretAccessKey
     ) {
       throw new Error(
         "R2 configuration is missing required fields.\n" +
           "R2_BUCKET, R2_ENDPOINT, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY"
       );
     }
-    this.r2 = createR2Client(this.r2Config);
+    this.r2 = createR2Client(this.config);
   }
   /**
    * Get a signed URL for serving an object from R2.
@@ -106,7 +105,7 @@ export class R2 {
   async getUrl(key: string) {
     return await getSignedUrl(
       this.r2,
-      new GetObjectCommand({ Bucket: this.r2Config.bucket, Key: key })
+      new GetObjectCommand({ Bucket: this.config.bucket, Key: key })
     );
   }
   /**
@@ -121,10 +120,27 @@ export class R2 {
     const key = customKey || crypto.randomUUID();
     const url = await getSignedUrl(
       this.r2,
-      new PutObjectCommand({ Bucket: this.r2Config.bucket, Key: key })
+      new PutObjectCommand({ Bucket: this.config.bucket, Key: key })
     );
     return { key, url };
   }
+
+  async store(ctx: RunActionCtx, blob: Blob) {
+    const key = crypto.randomUUID();
+    const command = new PutObjectCommand({
+      Bucket: this.config.bucket,
+      Key: key,
+      Body: blob,
+      ContentType: blob.type,
+    });
+    await this.r2.send(command);
+    await ctx.runAction(this.component.lib.syncMetadata, {
+      key: key,
+      ...this.config,
+    });
+    return key;
+  }
+
   /**
    * Retrieve R2 object metadata and store in Convex.
    *
@@ -135,7 +151,7 @@ export class R2 {
   async syncMetadata(ctx: RunActionCtx, key: string) {
     await ctx.runAction(this.component.lib.syncMetadata, {
       key: key,
-      ...this.r2Config,
+      ...this.config,
     });
   }
   /**
@@ -148,7 +164,7 @@ export class R2 {
   async getMetadata(ctx: RunQueryCtx, key: string) {
     return ctx.runQuery(this.component.lib.getMetadata, {
       key: key,
-      ...this.r2Config,
+      ...this.config,
     });
   }
   /**
@@ -160,7 +176,7 @@ export class R2 {
    */
   async listMetadata(ctx: RunQueryCtx, limit?: number, cursor?: string | null) {
     return ctx.runQuery(this.component.lib.listMetadata, {
-      ...this.r2Config,
+      ...this.config,
       limit: limit,
       cursor: cursor ?? undefined,
     });
@@ -175,7 +191,7 @@ export class R2 {
   async deleteObject(ctx: RunMutationCtx, key: string) {
     await ctx.runMutation(this.component.lib.deleteObject, {
       key: key,
-      ...this.r2Config,
+      ...this.config,
     });
   }
   /**
@@ -249,7 +265,7 @@ export class R2 {
         }),
         handler: async (ctx) => {
           if (opts?.checkUpload) {
-            await opts.checkUpload(ctx, this.r2Config.bucket);
+            await opts.checkUpload(ctx, this.config.bucket);
           }
           return this.generateUploadUrl();
         },
@@ -264,14 +280,14 @@ export class R2 {
         returns: v.null(),
         handler: async (ctx, args) => {
           if (opts?.checkUpload) {
-            await opts.checkUpload(ctx, this.r2Config.bucket);
+            await opts.checkUpload(ctx, this.config.bucket);
           }
           if (opts?.onUpload) {
-            await opts.onUpload(ctx, this.r2Config.bucket, args.key);
+            await opts.onUpload(ctx, this.config.bucket, args.key);
           }
           await ctx.scheduler.runAfter(0, this.component.lib.syncMetadata, {
             key: args.key,
-            ...this.r2Config,
+            ...this.config,
           });
         },
       }),
@@ -292,7 +308,7 @@ export class R2 {
         ),
         handler: async (ctx, args) => {
           if (opts?.checkReadKey) {
-            await opts.checkReadKey(ctx, this.r2Config.bucket, args.key);
+            await opts.checkReadKey(ctx, this.config.bucket, args.key);
           }
           return this.getMetadata(ctx, args.key);
         },
@@ -311,7 +327,7 @@ export class R2 {
         ),
         handler: async (ctx, args) => {
           if (opts?.checkReadBucket) {
-            await opts.checkReadBucket(ctx, this.r2Config.bucket);
+            await opts.checkReadBucket(ctx, this.config.bucket);
           }
           return this.listMetadata(
             ctx,
@@ -330,14 +346,14 @@ export class R2 {
         returns: v.null(),
         handler: async (ctx, args) => {
           if (opts?.checkDelete) {
-            await opts.checkDelete(ctx, this.r2Config.bucket, args.key);
+            await opts.checkDelete(ctx, this.config.bucket, args.key);
           }
           if (opts?.onDelete) {
-            await opts.onDelete(ctx, this.r2Config.bucket, args.key);
+            await opts.onDelete(ctx, this.config.bucket, args.key);
           }
           await ctx.scheduler.runAfter(0, this.component.lib.deleteObject, {
             key: args.key,
-            ...this.r2Config,
+            ...this.config,
           });
         },
       }),
