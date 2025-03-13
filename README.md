@@ -196,6 +196,39 @@ export const generateUploadUrlWithCustomKey = mutation({
 });
 ```
 
+## Storing Files from Actions
+
+Files can be stored in R2 directly from actions using the `r2.store` method. This is useful when you need to store files that are generated or downloaded on the server side.
+
+```ts
+// convex/example.ts
+import { internalAction } from "./_generated/server";
+import { R2 } from "@convex-dev/r2";
+
+const r2 = new R2(components.r2);
+
+export const store = internalAction({
+  handler: async (ctx) => {
+    // Download a random image from picsum.photos
+    const url = 'https://picsum.photos/200/300'
+    const response = await fetch(url);
+    const blob = await response.blob();
+
+    // This function call is the only required part, it uploads the blob to R2,
+    // syncs the metadata, and returns the key.
+    const key = await r2.store(ctx, blob);
+
+    // Example use case, associate the key with a record in your database
+    await ctx.runMutation(internal.example.insertImage, { key });
+  },
+});
+```
+
+The `store` method:
+- Takes a `Blob` and stores it in R2
+- Syncs metadata to your Convex database
+- Returns the key that can be used to access the file later
+
 ## Serving Files
 Files stored in R2 can be served to your users by generating a URL pointing to a given file.
 
@@ -258,39 +291,6 @@ export const deleteByKey = mutation({
   },
 });
 ```
-
-## Storing Files from Actions
-
-Files can be stored in R2 directly from actions using the `r2.store` method. This is useful when you need to store files that are generated or downloaded on the server side.
-
-```ts
-// convex/example.ts
-import { internalAction } from "./_generated/server";
-import { R2 } from "@convex-dev/r2";
-
-const r2 = new R2(components.r2);
-
-export const store = internalAction({
-  handler: async (ctx) => {
-    // Download a random image from picsum.photos
-    const url = 'https://picsum.photos/200/300'
-    const response = await fetch(url);
-    const blob = await response.blob();
-
-    // This function call is the only required part, it uploads the blob to R2,
-    // syncs the metadata, and returns the key.
-    const key = await r2.store(ctx, blob);
-
-    // Example use case, associate the key with a record in your database
-    await ctx.runMutation(internal.example.insertImage, { key });
-  },
-});
-```
-
-The `store` method:
-- Takes a `Blob` and stores it in R2
-- Syncs metadata to your Convex database
-- Returns the key that can be used to access the file later
 
 ## Accessing File Metadata
 File metadata of an R2 file can be accessed from actions via `r2.getMetadata`:
