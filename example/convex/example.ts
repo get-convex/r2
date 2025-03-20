@@ -17,6 +17,7 @@ export const {
 } = r2.clientApi<DataModel>({
   // The checkUpload callback is used for both `generateUploadUrl` and
   // `syncMetadata`.
+  // In any of these checks, throw an error to reject the request.
   checkUpload: async (ctx, bucket) => {
     // const user = await userFromAuth(ctx);
     // ...validate that the user can upload to this bucket

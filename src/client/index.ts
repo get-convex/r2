@@ -125,6 +125,13 @@ export class R2 {
     return { key, url };
   }
 
+  /**
+   * Store a blob in R2 and sync the metadata to Convex.
+   *
+   * @param ctx - A Convex action context.
+   * @param blob - The blob to store.
+   * @returns A promise that resolves to the key of the stored object.
+   */
   async store(ctx: RunActionCtx, blob: Blob) {
     const key = crypto.randomUUID();
     const command = new PutObjectCommand({
