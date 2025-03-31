@@ -130,10 +130,11 @@ export class R2 {
    *
    * @param ctx - A Convex action context.
    * @param blob - The blob to store.
+   * @param customKey (optional) - A custom R2 object key to use.
    * @returns A promise that resolves to the key of the stored object.
    */
-  async store(ctx: RunActionCtx, blob: Blob) {
-    const key = crypto.randomUUID();
+  async store(ctx: RunActionCtx, blob: Blob, customKey?: string) {
+    const key = customKey || crypto.randomUUID();
     const command = new PutObjectCommand({
       Bucket: this.config.bucket,
       Key: key,
