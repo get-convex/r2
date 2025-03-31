@@ -152,7 +152,7 @@ hook that handles the entire upload processs:
            type="file"
            accept="image/*"
            ref={imageInput}
-           onChange={event => setSelectedImage(event.target.files![0])}
+           onChange={(event) => setSelectedImage(event.target.files![0])}
            disabled={selectedImage !== null}
          />
          <input
@@ -210,13 +210,14 @@ const r2 = new R2(components.r2);
 export const store = internalAction({
   handler: async (ctx) => {
     // Download a random image from picsum.photos
-    const url = 'https://picsum.photos/200/300'
+    const url = "https://picsum.photos/200/300";
     const response = await fetch(url);
     const blob = await response.blob();
 
     // This function call is the only required part, it uploads the blob to R2,
-    // syncs the metadata, and returns the key.
-    const key = await r2.store(ctx, blob);
+    // syncs the metadata, and returns the key. The key is a uuid by default, but
+    // an optional custom key can be provided as the third argument.
+    const key = await r2.store(ctx, blob, optionalKey);
 
     // Example use case, associate the key with a record in your database
     await ctx.runMutation(internal.example.insertImage, { key });
@@ -225,14 +226,17 @@ export const store = internalAction({
 ```
 
 The `store` method:
+
 - Takes a `Blob` and stores it in R2
 - Syncs metadata to your Convex database
 - Returns the key that can be used to access the file later
 
 ## Serving Files
+
 Files stored in R2 can be served to your users by generating a URL pointing to a given file.
 
 ### Generating file URLs in queries
+
 The simplest way to serve files is to return URLs along with other data required by your app from queries and mutations.
 
 A file URL can be generated from a object key by the `r2.getUrl` function of the
@@ -255,7 +259,7 @@ export const list = query({
       messages.map(async (message) => ({
         ...message,
         imageUrl: await r2.getUrl(message.imageKey),
-      })),
+      }))
     );
   },
 });
@@ -293,6 +297,7 @@ export const deleteByKey = mutation({
 ```
 
 ## Accessing File Metadata
+
 File metadata of an R2 file can be accessed from actions via `r2.getMetadata`:
 
 ```ts
@@ -319,7 +324,7 @@ This is an example of the returned document:
 {
   "ContentType": "image/jpeg",
   "ContentLength": 125338,
-  "LastModified": "2024-03-20T12:34:56Z",
+  "LastModified": "2024-03-20T12:34:56Z"
 }
 ```
 
@@ -328,7 +333,6 @@ The returned document has the following fields:
 - `ContentType`: the ContentType of the file if it was provided on upload
 - `ContentLength`: the size of the file in bytes
 - `LastModified`: the last modified date of the file
-
 
 ### Listing and paginating metadata
 
