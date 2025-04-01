@@ -1,5 +1,11 @@
 import { v } from "convex/values";
-import { internalAction, internalMutation, mutation, query } from "./_generated/server";
+import {
+  action,
+  internalAction,
+  internalMutation,
+  mutation,
+  query,
+} from "./_generated/server";
 import { components, internal } from "./_generated/api";
 import { R2 } from "@convex-dev/r2";
 import { DataModel } from "./_generated/dataModel";
@@ -101,16 +107,16 @@ export const insertImage = internalMutation({
 // Insert an image server side (the insertImage mutation is just an example use
 // case, not required). When running the example app, you can run `npx convex run
 // example:store` (or run it in the dashboard) to insert an image this way.
-export const store = internalAction({
+export const generateAndStoreRandomImage = action({
   handler: async (ctx) => {
     // Download a random image from picsum.photos
-    const url = 'https://picsum.photos/200/300'
+    const url = "https://picsum.photos/200/300";
     const response = await fetch(url);
     const blob = await response.blob();
 
     // This function call is the only required part, it uploads the blob to R2,
     // syncs the metadata, and returns the key.
-    const key =await r2.store(ctx, blob);
+    const key = await r2.store(ctx, blob);
 
     await ctx.runMutation(internal.example.insertImage, { key });
   },

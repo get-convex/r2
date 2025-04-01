@@ -1,19 +1,28 @@
 import { api } from "../convex/_generated/api";
 import { useUploadFile } from "@convex-dev/r2/react";
-import { Upload } from "lucide-react";
+import { Upload, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useMutation, usePaginatedQuery, useQuery } from "convex/react";
+import {
+  useAction,
+  useMutation,
+  usePaginatedQuery,
+  useQuery,
+  useConvex,
+} from "convex/react";
 import { useDebouncedCallback } from "use-debounce";
 import { Id } from "../convex/_generated/dataModel";
 import { Separator } from "@/components/ui/separator";
 import { MetadataTable } from "./MetadataTable";
 import { GalleryImage } from "@/GalleryImage";
+import { useState } from "react";
 
 export default function App() {
-  // Returns a function that uploads the file to R2, syncs metadata to the
-  // Convex database, and returns the key of the uploaded file in case you need
-  // it.
+  const convex = useConvex();
   const uploadFile = useUploadFile(api.example);
+  const generateRandomImage = useAction(
+    api.example.generateAndStoreRandomImage
+  );
+  const [isGenerating, setIsGenerating] = useState(false);
   const updateImageCaption = useMutation(
     api.example.updateImageCaption
   ).withOptimisticUpdate((localStore, args) => {
@@ -40,8 +49,9 @@ export default function App() {
   async function handleUpload(event: React.ChangeEvent<HTMLInputElement>) {
     event.preventDefault();
     // `uploadFile` returns the key of the uploaded file, which you can use to
-    // associate the file with some other data, like a message.
+    // query that specific image
     const key = await uploadFile(event.target.files![0]);
+    console.log("Uploaded image with key:", key);
   }
 
   // Debounce the updateImageCaption mutation to avoid blocking input changes.
@@ -59,12 +69,30 @@ export default function App() {
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold my-4">Image Gallery</h1>
 
-      <div className="mb-4">
+      <div className="mb-4 flex gap-2">
         <Button variant="outline" className="gap-2" asChild>
           <label htmlFor="image-upload" className="cursor-pointer">
             <Upload size={20} />
             Upload Image
           </label>
+        </Button>
+        <Button
+          variant="outline"
+          className="gap-2"
+          onClick={async () => {
+            setIsGenerating(true);
+            try {
+              await generateRandomImage();
+            } catch (error) {
+              console.error("Failed to generate image:", error);
+            } finally {
+              setIsGenerating(false);
+            }
+          }}
+          disabled={isGenerating || !convex}
+        >
+          <Wand2 size={20} />
+          {isGenerating ? "Generating..." : "Generate Random Image"}
         </Button>
         <input
           id="image-upload"

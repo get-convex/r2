@@ -181,7 +181,8 @@ import { components } from "./_generated/api";
 
 export const r2 = new R2(components.r2);
 
-// A custom mutation that creates a key from the user id and a uuid
+// A custom mutation that creates a key from the user id and a uuid. If the key
+// already exists, the mutation will fail.
 export const generateUploadUrlWithCustomKey = mutation({
   args: {},
   handler: async (ctx) => {

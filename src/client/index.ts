@@ -33,10 +33,13 @@ type RunQueryCtx = {
   runQuery: GenericQueryCtx<GenericDataModel>["runQuery"];
 };
 type RunMutationCtx = {
+  runQuery: GenericQueryCtx<GenericDataModel>["runQuery"];
   runMutation: GenericMutationCtx<GenericDataModel>["runMutation"];
 };
 type RunActionCtx = {
   runAction: GenericActionCtx<GenericDataModel>["runAction"];
+  runQuery: GenericQueryCtx<GenericDataModel>["runQuery"];
+  runMutation: GenericMutationCtx<GenericDataModel>["runMutation"];
 };
 
 export class R2 {
@@ -111,7 +114,7 @@ export class R2 {
   /**
    * Generate a signed URL for uploading an object to R2.
    *
-   * @param customKey (optional) - A custom R2 object key to use.
+   * @param customKey (optional) - A custom R2 object key to use. Must be unique.
    * @returns A promise that resolves to an object with the following fields:
    *   - `key` - The R2 object key.
    *   - `url` - A signed URL for uploading the object.
@@ -134,6 +137,20 @@ export class R2 {
    * @returns A promise that resolves to the key of the stored object.
    */
   async store(ctx: RunActionCtx, blob: Blob, customKey?: string) {
+    if (customKey) {
+      const existingMetadataForKey = await ctx.runQuery(
+        this.component.lib.getMetadata,
+        {
+          key: customKey,
+          ...this.config,
+        }
+      );
+      if (existingMetadataForKey) {
+        throw new Error(
+          `Metadata already exists for key ${customKey}. Please use a unique key.`
+        );
+      }
+    }
     const key = customKey || crypto.randomUUID();
     const command = new PutObjectCommand({
       Bucket: this.config.bucket,
