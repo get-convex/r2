@@ -113,7 +113,6 @@ export const generateAndStoreRandomImage = action({
     const url = "https://picsum.photos/200/300";
     const response = await fetch(url);
     const blob = await response.blob();
-
     // This function call is the only required part, it uploads the blob to R2,
     // syncs the metadata, and returns the key.
     const key = await r2.store(ctx, blob);

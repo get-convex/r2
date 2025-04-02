@@ -21,8 +21,31 @@ import {
   r2ConfigValidator,
 } from "../shared";
 import schema from "../component/schema";
+import { v4 as uuidv4 } from "uuid";
+import { fileTypeFromBuffer } from "file-type";
+
+const isNode = Boolean(process.execPath);
+
+const uuid = isNode ? uuidv4 : crypto.randomUUID;
 
 export const DEFAULT_BATCH_SIZE = 10;
+
+const getFileType = async (file: Uint8Array | Buffer | Blob) => {
+  if (isNode && (file instanceof Buffer || file instanceof Uint8Array)) {
+    return (await fileTypeFromBuffer(file))?.mime;
+  }
+  if (file instanceof Blob) {
+    return file.type;
+  }
+};
+
+const parseFile = async (file: Uint8Array | Buffer | Blob) => {
+  if (isNode && file instanceof Blob) {
+    const buffer = await file.arrayBuffer();
+    return new Uint8Array(buffer);
+  }
+  return file;
+};
 
 export type ClientApi = ApiFromModules<{
   client: ReturnType<R2["clientApi"]>;
@@ -133,30 +156,44 @@ export class R2 {
    *
    * @param ctx - A Convex action context.
    * @param blob - The blob to store.
-   * @param customKey (optional) - A custom R2 object key to use.
+   * @param opts - Optional config object.
+   *   - `key` - A custom R2 object key to use (uuid if not provided).
+   *   - `type` - The MIME type of the blob (will be inferred if not provided).
    * @returns A promise that resolves to the key of the stored object.
    */
-  async store(ctx: RunActionCtx, blob: Blob, customKey?: string) {
-    if (customKey) {
+
+  async store(
+    ctx: RunActionCtx,
+    file: Uint8Array | Buffer | Blob,
+    opts: string | { key?: string; type?: string } = {}
+  ) {
+    if (typeof opts === "string") {
+      opts = { key: opts };
+    }
+    if (opts.key) {
       const existingMetadataForKey = await ctx.runQuery(
         this.component.lib.getMetadata,
         {
-          key: customKey,
+          key: opts.key,
           ...this.config,
         }
       );
       if (existingMetadataForKey) {
         throw new Error(
-          `Metadata already exists for key ${customKey}. Please use a unique key.`
+          `Metadata already exists for key ${opts.key}. Please use a unique key.`
         );
       }
     }
-    const key = customKey || crypto.randomUUID();
+    const key = opts.key || uuid();
+
+    const parsedFile = await parseFile(file);
+    const fileType = await getFileType(parsedFile);
+
     const command = new PutObjectCommand({
       Bucket: this.config.bucket,
       Key: key,
-      Body: blob,
-      ContentType: blob.type,
+      Body: parsedFile,
+      ContentType: opts.type || fileType,
     });
     await this.r2.send(command);
     await ctx.runAction(this.component.lib.syncMetadata, {

@@ -20,7 +20,7 @@ export default function App() {
   const convex = useConvex();
   const uploadFile = useUploadFile(api.example);
   const generateRandomImage = useAction(
-    api.example.generateAndStoreRandomImage
+    api.exampleNode.generateAndStoreRandomImage
   );
   const [isGenerating, setIsGenerating] = useState(false);
   const updateImageCaption = useMutation(
@@ -45,6 +45,7 @@ export default function App() {
     {},
     { initialNumItems: 20 }
   );
+  console.log("metadata", metadata.results.length);
 
   async function handleUpload(event: React.ChangeEvent<HTMLInputElement>) {
     event.preventDefault();
@@ -82,7 +83,9 @@ export default function App() {
           onClick={async () => {
             setIsGenerating(true);
             try {
+              console.log("Generating random image");
               await generateRandomImage();
+              console.log("Random image generated");
             } catch (error) {
               console.error("Failed to generate image:", error);
             } finally {

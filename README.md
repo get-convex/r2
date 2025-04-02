@@ -217,8 +217,12 @@ export const store = internalAction({
 
     // This function call is the only required part, it uploads the blob to R2,
     // syncs the metadata, and returns the key. The key is a uuid by default, but
-    // an optional custom key can be provided as the third argument.
-    const key = await r2.store(ctx, blob, optionalKey);
+    // an optional custom key can be provided in the options object. A MIME type
+    // can also be provided, which will override the type inferred for blobs.
+    const key = await r2.store(ctx, blob, {
+      key: "my-custom-key",
+      type: "image/jpeg",
+    });
 
     // Example use case, associate the key with a record in your database
     await ctx.runMutation(internal.example.insertImage, { key });
@@ -228,7 +232,7 @@ export const store = internalAction({
 
 The `store` method:
 
-- Takes a `Blob` and stores it in R2
+- Takes a `Blob`, `Buffer`, or `Uint8Array` and stores it in R2
 - Syncs metadata to your Convex database
 - Returns the key that can be used to access the file later
 
