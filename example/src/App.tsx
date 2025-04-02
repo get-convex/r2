@@ -20,7 +20,7 @@ export default function App() {
   const convex = useConvex();
   const uploadFile = useUploadFile(api.example);
   const generateRandomImage = useAction(
-    api.exampleNode.generateAndStoreRandomImage
+    api.example.generateAndStoreRandomImage
   );
   const [isGenerating, setIsGenerating] = useState(false);
   const updateImageCaption = useMutation(
