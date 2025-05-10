@@ -24,6 +24,25 @@ import schema from "../component/schema";
 import { v4 as uuidv4 } from "uuid";
 import { fileTypeFromBuffer } from "file-type";
 
+const parseConfig = (config: Infer<typeof r2ConfigValidator>) => {
+  const configVars: Record<keyof typeof config, string> = {
+    bucket: "R2_BUCKET",
+    endpoint: "R2_ENDPOINT",
+    accessKeyId: "R2_ACCESS_KEY_ID",
+    secretAccessKey: "R2_SECRET_ACCESS_KEY",
+  };
+  const missingEnvVars = Object.keys(configVars).filter(
+    (key) => !config[key as keyof typeof config]
+  );
+  if (missingEnvVars.length > 0) {
+    throw new Error(
+      `R2 configuration is missing required fields:\n` +
+        `Missing: ${missingEnvVars.map((key) => configVars[key as keyof typeof configVars]).join(", ")}`
+    );
+  }
+  return config;
+};
+
 const isNode = Boolean(process.execPath);
 
 const uuid = isNode ? uuidv4 : crypto.randomUUID;
@@ -109,18 +128,7 @@ export class R2 {
       secretAccessKey:
         options?.R2_SECRET_ACCESS_KEY ?? process.env.R2_SECRET_ACCESS_KEY!,
     };
-    if (
-      !this.config.bucket ||
-      !this.config.endpoint ||
-      !this.config.accessKeyId ||
-      !this.config.secretAccessKey
-    ) {
-      throw new Error(
-        "R2 configuration is missing required fields.\n" +
-          "R2_BUCKET, R2_ENDPOINT, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY"
-      );
-    }
-    this.r2 = createR2Client(this.config);
+    this.r2 = createR2Client(parseConfig(this.config));
   }
   /**
    * Get a signed URL for serving an object from R2.
