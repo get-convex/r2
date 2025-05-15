@@ -10,17 +10,20 @@ import { ClientApi } from "../client";
  *
  * @param api - The client API object from the R2 component, including at least
  * `generateUploadUrl` and `syncMetadata`.
+ * @param customKey - An optional key to use for the uploaded file. If not
+ * provided, a random key will be generated.
  * @returns A function that uploads a file to R2.
  */
 export function useUploadFile(
-  api: Pick<ClientApi, "generateUploadUrl" | "syncMetadata">
+  api: Pick<ClientApi, "generateUploadUrl" | "syncMetadata">,
+  customKey?: string
 ) {
   const generateUploadUrl = useMutation(api.generateUploadUrl);
   const syncMetadata = useMutation(api.syncMetadata);
 
   return useCallback(
     async (file: File) => {
-      const { url, key } = await generateUploadUrl();
+      const { url, key } = await generateUploadUrl(customKey);
       try {
         const result = await fetch(url, {
           method: "PUT",

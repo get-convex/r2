@@ -11,6 +11,8 @@ Store and serve files with Cloudflare R2.
 const uploadFile = useUploadFile(api.example);
 // ...in a callback
 const key = await uploadFile(file);
+// You can also pass a custom key, if not a random uuid will be generated
+const key = await uploadFile(file, "my-custom-key");
 
 // Access files on the server
 const url = await r2.getUrl(key);
