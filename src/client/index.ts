@@ -328,16 +328,18 @@ export class R2 {
        * Generate a signed URL for uploading an object to R2.
        */
       generateUploadUrl: mutationGeneric({
-        args: {},
+        args: {
+          customKey: v.optional(v.string()),
+        },
         returns: v.object({
           key: v.string(),
           url: v.string(),
         }),
-        handler: async (ctx) => {
+        handler: async (ctx, args) => {
           if (opts?.checkUpload) {
             await opts.checkUpload(ctx, this.config.bucket);
           }
-          return this.generateUploadUrl();
+          return this.generateUploadUrl(args.customKey);
         },
       }),
       /**
