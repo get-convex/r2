@@ -1,11 +1,13 @@
 import {
   ApiFromModules,
+  createFunctionHandle,
   Expand,
   FunctionReference,
   GenericActionCtx,
   GenericDataModel,
   GenericMutationCtx,
   GenericQueryCtx,
+  internalMutationGeneric,
   mutationGeneric,
   paginationOptsValidator,
   queryGeneric,
@@ -23,6 +25,14 @@ import {
 import schema from "../component/schema";
 import { v4 as uuidv4 } from "uuid";
 import { fileTypeFromBuffer } from "file-type";
+
+export type R2Callbacks = {
+  onSyncMetadata?: FunctionReference<
+    "mutation",
+    "internal",
+    { bucket: string; key: string; isNew: boolean }
+  >;
+};
 
 const parseConfig = (config: Infer<typeof r2ConfigValidator>) => {
   const configVars: Record<keyof typeof config, string> = {
@@ -317,11 +327,16 @@ export class R2 {
       bucket: string,
       key: string
     ) => void | Promise<void>;
+    onSyncMetadata?: (
+      ctx: GenericMutationCtx<DataModel>,
+      args: { bucket: string; key: string; isNew: boolean }
+    ) => void | Promise<void>;
     onDelete?: (
       ctx: GenericMutationCtx<DataModel>,
       bucket: string,
       key: string
     ) => void | Promise<void>;
+    callbacks?: R2Callbacks;
   }) {
     return {
       /**
@@ -357,8 +372,28 @@ export class R2 {
           }
           await ctx.scheduler.runAfter(0, this.component.lib.syncMetadata, {
             key: args.key,
+            onComplete: opts?.callbacks?.onSyncMetadata
+              ? await createFunctionHandle(opts.callbacks?.onSyncMetadata)
+              : undefined,
             ...this.config,
           });
+        },
+      }),
+      onSyncMetadata: internalMutationGeneric({
+        args: {
+          key: v.string(),
+          bucket: v.string(),
+          isNew: v.boolean(),
+        },
+        returns: v.null(),
+        handler: async (ctx, args) => {
+          if (opts?.onSyncMetadata) {
+            await opts.onSyncMetadata(ctx, {
+              bucket: args.bucket,
+              key: args.key,
+              isNew: args.isNew,
+            });
+          }
         },
       }),
       /**

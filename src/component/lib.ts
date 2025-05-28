@@ -19,6 +19,7 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { asyncMap } from "convex-helpers";
 import { paginator } from "convex-helpers/server/pagination";
 import { ActionRetrier } from "@convex-dev/action-retrier";
+import { R2Callbacks } from "../client";
 
 const DEFAULT_LIST_LIMIT = 100;
 const retrier = new ActionRetrier(components.actionRetrier);
@@ -118,10 +119,28 @@ export const listMetadata = query({
   },
 });
 
-export const insertMetadata = mutation({
+export const upsertMetadata = mutation({
   args: schema.tables.metadata.validator.fields,
-  returns: v.null(),
+  returns: v.object({
+    isNew: v.boolean(),
+  }),
   handler: async (ctx, args) => {
+    const existingMetadata = await ctx.db
+      .query("metadata")
+      .withIndex("bucket_key", (q) =>
+        q.eq("bucket", args.bucket).eq("key", args.key)
+      )
+      .unique();
+    if (existingMetadata) {
+      await ctx.db.patch(existingMetadata._id, {
+        contentType: args.contentType,
+        size: args.size,
+        sha256: args.sha256,
+        lastModified: args.lastModified,
+        link: args.link,
+      });
+      return { isNew: false };
+    }
     await ctx.db.insert("metadata", {
       key: args.key,
       contentType: args.contentType,
@@ -131,12 +150,14 @@ export const insertMetadata = mutation({
       lastModified: args.lastModified,
       link: args.link,
     });
+    return { isNew: true };
   },
 });
 
 export const syncMetadata = action({
   args: {
     key: v.string(),
+    onComplete: v.optional(v.string()),
     ...r2ConfigValidator.fields,
   },
   returns: v.null(),
@@ -151,7 +172,7 @@ export const syncMetadata = action({
 
     const accountId = /\/{2}([^/.]+)\./.exec(r2Config.endpoint)?.[1] ?? "";
     const link = `https://dash.cloudflare.com/${accountId}/r2/default/buckets/${r2Config.bucket}/objects/${key}/details`;
-    await ctx.runMutation(api.lib.insertMetadata, {
+    const { isNew } = await ctx.runMutation(api.lib.upsertMetadata, {
       key,
       lastModified: response.LastModified?.toISOString() ?? "",
       contentType: response.ContentType,
@@ -160,6 +181,14 @@ export const syncMetadata = action({
       bucket: r2Config.bucket,
       link,
     });
+    const onComplete = args.onComplete as R2Callbacks["onSyncMetadata"];
+    if (onComplete) {
+      await ctx.runMutation(onComplete, {
+        key,
+        bucket: r2Config.bucket,
+        isNew,
+      });
+    }
   },
 });
 

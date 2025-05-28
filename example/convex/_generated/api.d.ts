@@ -92,20 +92,6 @@ export declare const components: {
           url: string;
         } | null
       >;
-      insertMetadata: FunctionReference<
-        "mutation",
-        "internal",
-        {
-          bucket: string;
-          contentType?: string;
-          key: string;
-          lastModified: string;
-          link: string;
-          sha256?: string;
-          size?: number;
-        },
-        null
-      >;
       listMetadata: FunctionReference<
         "query",
         "internal",
@@ -155,9 +141,24 @@ export declare const components: {
           bucket: string;
           endpoint: string;
           key: string;
+          onComplete?: string;
           secretAccessKey: string;
         },
         null
+      >;
+      upsertMetadata: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          bucket: string;
+          contentType?: string;
+          key: string;
+          lastModified: string;
+          link: string;
+          sha256?: string;
+          size?: number;
+        },
+        { isNew: boolean }
       >;
     };
   };

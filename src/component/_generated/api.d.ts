@@ -80,20 +80,6 @@ export type Mounts = {
         url: string;
       } | null
     >;
-    insertMetadata: FunctionReference<
-      "mutation",
-      "public",
-      {
-        bucket: string;
-        contentType?: string;
-        key: string;
-        lastModified: string;
-        link: string;
-        sha256?: string;
-        size?: number;
-      },
-      null
-    >;
     listMetadata: FunctionReference<
       "query",
       "public",
@@ -143,9 +129,24 @@ export type Mounts = {
         bucket: string;
         endpoint: string;
         key: string;
+        onComplete?: string;
         secretAccessKey: string;
       },
       null
+    >;
+    upsertMetadata: FunctionReference<
+      "mutation",
+      "public",
+      {
+        bucket: string;
+        contentType?: string;
+        key: string;
+        lastModified: string;
+        link: string;
+        sha256?: string;
+        size?: number;
+      },
+      { isNew: boolean }
     >;
   };
 };

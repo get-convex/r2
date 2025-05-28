@@ -1,15 +1,11 @@
 import { v } from "convex/values";
-import {
-  action,
-  internalAction,
-  internalMutation,
-  mutation,
-  query,
-} from "./_generated/server";
+import { action, internalMutation, mutation, query } from "./_generated/server";
 import { components, internal } from "./_generated/api";
-import { R2 } from "@convex-dev/r2";
+import { R2, R2Callbacks } from "@convex-dev/r2";
 import { DataModel } from "./_generated/dataModel";
 const r2 = new R2(components.r2);
+
+const callbacks: R2Callbacks = internal.example;
 
 export const {
   generateUploadUrl,
@@ -20,6 +16,7 @@ export const {
   getMetadata,
   listMetadata,
   deleteObject,
+  onSyncMetadata,
 } = r2.clientApi<DataModel>({
   // The checkUpload callback is used for both `generateUploadUrl` and
   // `syncMetadata`.
@@ -68,6 +65,12 @@ export const {
       await ctx.db.delete(image._id);
     }
   },
+  onSyncMetadata: async (ctx, args) => {
+    console.log("onSyncMetadata", args);
+    const metadata = await r2.getMetadata(ctx, args.key);
+    console.log("metadata", metadata);
+  },
+  callbacks,
 });
 
 export const listImages = query({

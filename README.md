@@ -113,7 +113,7 @@ hook that handles the entire upload processs:
      },
      onUpload: async (ctx, key) => {
        // ...do something with the key
-       // Runs in the `syncMetadata` mutation, as the upload is performed from the
+       // Runs in the `syncMetadata` mutation, before the upload is performed from the
        // client side. Convenient way to create relations between the newly created
        // object key and other data in your Convex database. Runs after the `checkUpload`
        // callback.
@@ -367,6 +367,44 @@ export const page = query({
     return r2.pageMetadata(ctx, args.paginationOpts);
   },
 });
+```
+
+### Accessing metadata after upload
+
+The `onSyncMetadata` callback can be used to run a mutation after every metadata
+sync. The `useUploadFile` React hook syncs metadata after every upload, so this
+function will run each time as well.
+
+Because this runs after metadata sync, the `r2.getMetadata` can be used to
+access the metadata of the newly uploaded file.
+
+```ts
+// convex/example.ts
+import { R2, type R2Callbacks } from "@convex-dev/r2";
+import { components } from "./_generated/api";
+
+export const r2 = new R2(components.r2);
+
+const callbacks: R2Callbacks = internal.example;
+
+export const { generateUploadUrl, syncMetadata, onSyncMetadata } = r2.clientApi(
+  {
+    // Pass the functions from this file back into the component.
+    // Technically only an object with `onSyncMetadata` is required, the recommended
+    // pattern is just for convenience.
+    callbacks,
+
+    onSyncMetadata: async (ctx, args) => {
+      // args: { bucket: string; key: string; isNew: boolean }
+      // args.isNew is true if the key did not previously exist in your Convex R2
+      // metadata table
+      const metadata = await r2.getMetadata(ctx, args.key);
+      // log metadata of synced object
+      console.log("metadata", metadata);
+      // you can also check for the object's
+    },
+  }
+);
 ```
 
 <!-- END: Include on https://convex.dev/components -->
