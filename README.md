@@ -401,7 +401,6 @@ export const { generateUploadUrl, syncMetadata, onSyncMetadata } = r2.clientApi(
       const metadata = await r2.getMetadata(ctx, args.key);
       // log metadata of synced object
       console.log("metadata", metadata);
-      // you can also check for the object's
     },
   }
 );
