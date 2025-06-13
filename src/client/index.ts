@@ -144,12 +144,16 @@ export class R2 {
    * Get a signed URL for serving an object from R2.
    *
    * @param key - The R2 object key.
+   * @param options - Optional config object.
+   *   - `expiresIn` - The number of seconds until the URL expires (default: 3600, max: 604800 for 7 days).
    * @returns A promise that resolves to a signed URL for the object.
    */
-  async getUrl(key: string) {
+  async getUrl(key: string, options: { expiresIn?: number } = {}) {
+    const { expiresIn = 3600 } = options;
     return await getSignedUrl(
       this.r2,
-      new GetObjectCommand({ Bucket: this.config.bucket, Key: key })
+      new GetObjectCommand({ Bucket: this.config.bucket, Key: key }),
+      { expiresIn }
     );
   }
   /**
