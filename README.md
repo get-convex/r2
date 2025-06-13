@@ -263,7 +263,14 @@ export const list = query({
     return Promise.all(
       messages.map(async (message) => ({
         ...message,
-        imageUrl: await r2.getUrl(message.imageKey),
+        imageUrl: await r2.getUrl(
+          message.imageKey,
+          // Options object is optional, can be omitted
+          {
+            // Custom expiration time in seconds, default is 900 (15 minutes)
+            expiresIn: 60 * 60 * 24, // 1 day
+          }
+        ),
       }))
     );
   },
