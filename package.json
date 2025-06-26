@@ -86,7 +86,7 @@
   "types": "./dist/commonjs/client/index.d.ts",
   "module": "./dist/esm/client/index.js",
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.726.1",
+    "@aws-sdk/client-s3": "3.726.1",
     "@aws-sdk/s3-request-presigner": "^3.693.0",
     "@convex-dev/action-retrier": "^0.1.5",
     "convex-helpers": "^0.1.67",
