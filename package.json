@@ -58,6 +58,18 @@
         "default": "./dist/commonjs/react.js"
       }
     },
+    "./svelte": {
+      "import": {
+        "@convex-dev/component-source": "./src/svelte/index.ts",
+        "types": "./dist/esm/svelte/index.d.ts",
+        "default": "./dist/esm/svelte/index.js"
+      },
+      "require": {
+        "@convex-dev/component-source": "./src/svelte/index.ts",
+        "types": "./dist/commonjs/svelte/index.d.ts",
+        "default": "./dist/commonjs/svelte/index.js"
+      }
+    },
     "./convex.config": {
       "import": {
         "@convex-dev/component-source": "./src/component/convex.config.ts",
@@ -67,7 +79,10 @@
     }
   },
   "peerDependencies": {
-    "convex": "~1.16.5 || ~1.17.0"
+    "convex": "~1.16.5 || >=1.17.0 <1.35.0",
+    "react": "^18.3.1",
+    "convex-svelte": "^0.0.11",
+    "svelte": ">=5.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.1",

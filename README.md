@@ -8,6 +8,22 @@
 
 Store and serve files with Cloudflare R2.
 
+```ts
+// or @convex-dev/r2/svelte for Svelte!
+import { useUploadFile } from "@convex-dev/r2/react";
+
+// Upload files from React
+const uploadFile = useUploadFile(api.example);
+// ...in a callback
+const key = await uploadFile(file);
+
+// Access files on the server
+const url = await r2.getUrl(key);
+const response = await fetch(url);
+```
+
+**Check out the [example app](example) for a complete example.**
+
 ## Prerequisites
 
 ### Cloudflare Account
@@ -66,7 +82,126 @@ npx convex env set R2_ENDPOINT=xxxxx
 npx convex env set R2_BUCKET=xxxxx
 ```
 
-Instantiate a R2 Component client in a file in your app's `convex/` folder:
+## Uploading files
+
+File uploads to R2 typically use signed urls. The R2 component provides hooks for React and Svelte that handle the entire upload process:
+
+- generates the signed url
+- uploads the file to R2
+- stores the file's metadata in your Convex database
+
+1. Instantiate a R2 component client in a file in your app's `convex/` folder:
+
+   ```ts
+   // convex/example.ts
+   import { R2 } from "@convex-dev/r2";
+   import { components } from "./_generated/api";
+
+   export const r2 = new R2(components.r2);
+
+   export const { generateUploadUrl, syncMetadata } = r2.clientApi({
+     checkUpload: async (ctx, bucket) => {
+       // const user = await userFromAuth(ctx);
+       // ...validate that the user can upload to this bucket
+     },
+     onUpload: async (ctx, key) => {
+       // ...do something with the key
+       // Runs in the `syncMetadata` mutation, before the upload is performed from the
+       // client side. Convenient way to create relations between the newly created
+       // object key and other data in your Convex database. Runs after the `checkUpload`
+       // callback.
+     },
+   });
+   ```
+
+2. Use the `useUploadFile` hook in your component to upload files:
+
+   React:
+
+   ```tsx
+   // src/App.tsx
+   import { FormEvent, useRef, useState } from "react";
+   import { useAction } from "convex/react";
+   import { api } from "../convex/_generated/api";
+   import { useUploadFile } from "@convex-dev/r2/react";
+
+   export default function App() {
+     // Passing the entire api exported from `convex/example.ts` to the hook.
+     // This must include `generateUploadUrl` and `syncMetadata` from the r2 client api.
+     const uploadFile = useUploadFile(api.example);
+     const imageInput = useRef<HTMLInputElement>(null);
+     const [selectedImage, setSelectedImage] = useState<File | null>(null);
+
+     async function handleUpload(event: FormEvent) {
+       event.preventDefault();
+
+       // The file is uploaded to R2, metadata is synced to the database, and the
+       // key of the newly created object is returned.
+       await uploadFile(selectedImage!);
+       setSelectedImage(null);
+       imageInput.current!.value = "";
+     }
+     return (
+       <form onSubmit={handleUpload}>
+         <input
+           type="file"
+           accept="image/*"
+           ref={imageInput}
+           onChange={(event) => setSelectedImage(event.target.files![0])}
+           disabled={selectedImage !== null}
+         />
+         <input
+           type="submit"
+           value="Upload"
+           disabled={selectedImage === null}
+         />
+       </form>
+     );
+   }
+   ```
+
+   Svelte:
+
+   ```svelte
+   <script lang="ts">
+      import { useUploadFile } from "@convex-dev/r2/svelte";
+      import { api } from "../convex/_generated/api";
+
+      const uploadFile = useUploadFile(api.example);
+
+      let selectedImage = $state<File | null>(null);
+
+      async function handleUpload(file: File) {
+        await uploadFile(file);
+        selectedImage = null;
+      }
+    </script>
+
+    <form
+      onsubmit={() => {
+        if (selectedImage) handleUpload(selectedImage);
+      }}
+    >
+      <input
+        type="file"
+        accept="image/*"
+        onchange={(e) => {
+          selectedImage = e.currentTarget.files?.[0] ?? null;
+        }}
+        disabled={selectedImage !== null}
+      />
+      <button type="submit" disabled={selectedImage === null}> Upload </button>
+    </form>
+   ```
+
+### Using a custom object key
+
+The `r2.generateUploadUrl` function generates a uuid to use as the object key by
+default, but a custom key can be provided if desired. Note: the `generateUploadUrl`
+function returned by `r2.clientApi` does not accept a custom key, as that
+function is a mutation to be called from the client side and you don't want your
+client defining your object keys. Providing a custom key requires making your
+own mutation that calls the `generateUploadUrl` method of the `r2` instance.
 
 ```ts
 // convex/example.ts
@@ -490,5 +625,72 @@ The returned document has the following fields:
 - `ContentType`: the ContentType of the file if it was provided on upload
 - `ContentLength`: the size of the file in bytes
 - `LastModified`: the last modified date of the file
+
+### Listing and paginating metadata
+
+Metadata can be listed or paginated from actions via `r2.listMetadata` and `r2.pageMetadata`.
+
+```ts
+// convex/example.ts
+import { query } from "./_generated/server";
+import { R2 } from "@convex-dev/r2";
+
+const r2 = new R2(components.r2);
+
+export const list = query({
+  args: {
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    return r2.listMetadata(ctx, args.limit);
+  },
+});
+
+export const page = query({
+  args: {
+    paginationOpts: paginationOptsValidator,
+  },
+  handler: async (ctx, args) => {
+    return r2.pageMetadata(ctx, args.paginationOpts);
+  },
+});
+```
+
+### Accessing metadata after upload
+
+The `onSyncMetadata` callback can be used to run a mutation after every metadata
+sync. The `useUploadFile` hook syncs metadata after every upload, so this
+function will run each time as well.
+
+Because this runs after metadata sync, the `r2.getMetadata` can be used to
+access the metadata of the newly uploaded file.
+
+```ts
+// convex/example.ts
+import { R2, type R2Callbacks } from "@convex-dev/r2";
+import { components } from "./_generated/api";
+
+export const r2 = new R2(components.r2);
+
+const callbacks: R2Callbacks = internal.example;
+
+export const { generateUploadUrl, syncMetadata, onSyncMetadata } = r2.clientApi(
+  {
+    // Pass the functions from this file back into the component.
+    // Technically only an object with `onSyncMetadata` is required, the recommended
+    // pattern is just for convenience.
+    callbacks,
+
+    onSyncMetadata: async (ctx, args) => {
+      // args: { bucket: string; key: string; isNew: boolean }
+      // args.isNew is true if the key did not previously exist in your Convex R2
+      // metadata table
+      const metadata = await r2.getMetadata(ctx, args.key);
+      // log metadata of synced object
+      console.log("metadata", metadata);
+    },
+  }
+);
+```
 
 <!-- END: Include on https://convex.dev/components -->
