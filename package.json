@@ -7,7 +7,7 @@
     "email": "support@convex.dev",
     "url": "https://github.com/get-convex/r2/issues"
   },
-  "version": "0.6.3",
+  "version": "0.6.4",
   "license": "Apache-2.0",
   "keywords": [
     "convex",
@@ -80,9 +80,10 @@
   },
   "peerDependencies": {
     "convex": "~1.16.5 || >=1.17.0 <1.35.0",
-    "react": "^18.3.1",
     "convex-svelte": "^0.0.11",
-    "svelte": ">=5.0.0"
+    "svelte": ">=5.0.0",
+    "react": "^18 || ^19",
+    "react-dom": "^18 || ^19"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.1",
