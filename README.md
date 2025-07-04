@@ -7,6 +7,9 @@
 Store and serve files with Cloudflare R2.
 
 ```ts
+// or @convex-dev/r2/svelte for Svelte!
+import { useUploadFile } from "@convex-dev/r2/react";
+
 // Upload files from React
 const uploadFile = useUploadFile(api.example);
 // ...in a callback
@@ -90,8 +93,7 @@ npx convex env set R2_BUCKET xxxxx
 
 ## Uploading files
 
-File uploads to R2 typically use signed urls. The R2 component provides a React
-hook that handles the entire upload processs:
+File uploads to R2 typically use signed urls. The R2 component provides hooks for React and Svelte that handle the entire upload process:
 
 - generates the signed url
 - uploads the file to R2
@@ -121,7 +123,9 @@ hook that handles the entire upload processs:
    });
    ```
 
-2. Use the `useUploadFile` hook in a React component to upload files:
+2. Use the `useUploadFile` hook in your component to upload files:
+
+   React:
 
    ```tsx
    // src/App.tsx
@@ -163,6 +167,40 @@ hook that handles the entire upload processs:
        </form>
      );
    }
+   ```
+
+   Svelte:
+
+   ```svelte
+   <script lang="ts">
+      import { useUploadFile } from "@convex-dev/r2/svelte";
+      import { api } from "../convex/_generated/api";
+
+      const uploadFile = useUploadFile(api.example);
+
+      let selectedImage = $state<File | null>(null);
+
+      async function handleUpload(file: File) {
+        await uploadFile(file);
+        selectedImage = null;
+      }
+    </script>
+
+    <form
+      onsubmit={() => {
+        if (selectedImage) handleUpload(selectedImage);
+      }}
+    >
+      <input
+        type="file"
+        accept="image/*"
+        onchange={(e) => {
+          selectedImage = e.currentTarget.files?.[0] ?? null;
+        }}
+        disabled={selectedImage !== null}
+      />
+      <button type="submit" disabled={selectedImage === null}> Upload </button>
+    </form>
    ```
 
 ### Using a custom object key
@@ -379,7 +417,7 @@ export const page = query({
 ### Accessing metadata after upload
 
 The `onSyncMetadata` callback can be used to run a mutation after every metadata
-sync. The `useUploadFile` React hook syncs metadata after every upload, so this
+sync. The `useUploadFile` hook syncs metadata after every upload, so this
 function will run each time as well.
 
 Because this runs after metadata sync, the `r2.getMetadata` can be used to
