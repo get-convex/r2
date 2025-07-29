@@ -113,12 +113,12 @@ File uploads to R2 typically use signed urls. The R2 component provides hooks fo
        // const user = await userFromAuth(ctx);
        // ...validate that the user can upload to this bucket
      },
-     onUpload: async (ctx, key) => {
-       // ...do something with the key
-       // Runs in the `syncMetadata` mutation, before the upload is performed from the
-       // client side. Convenient way to create relations between the newly created
-       // object key and other data in your Convex database. Runs after the `checkUpload`
-       // callback.
+    onUpload: async (ctx, bucket, key) => {
+      // ...do something with the key
+      // This technically runs in the `syncMetadata` mutation, as the upload
+      // is performed from the client side. Will run if using the `useUploadFile`
+      // hook, or if `syncMetadata` function is called directly. Runs after the
+      // `checkUpload` callback.
      },
    });
    ```
