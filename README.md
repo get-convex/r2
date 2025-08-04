@@ -91,6 +91,8 @@ npx convex env set R2_ENDPOINT xxxxx
 npx convex env set R2_BUCKET xxxxx
 ```
 
+Note: All of these values can also be supplied as the second argument to `R2`.
+
 ## Uploading files
 
 File uploads to R2 typically use signed urls. The R2 component provides hooks for React and Svelte that handle the entire upload process:
