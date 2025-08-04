@@ -92,6 +92,8 @@ npx convex env set R2_BUCKET xxxxx
 ```
 
 Note: All of these values can also be supplied as the second argument to `R2`.
+This enables storing values in multiple buckets using the same component.
+It also enables dynamically setting the values at runtime.
 
 ## Uploading files
 
