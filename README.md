@@ -326,7 +326,7 @@ function Image({ message }: { message: { url: string } }) {
 
 ## Deleting Files
 
-Files stored in R2 can be deleted from actions via the `r2.delete` function, which accepts an object key.
+Files stored in R2 can be deleted from actions or mutations via the `r2.deleteObject` function, which accepts an object key.
 
 ```ts
 // convex/images.ts
@@ -336,12 +336,12 @@ import { R2 } from "@convex-dev/r2";
 
 const r2 = new R2(components.r2);
 
-export const deleteByKey = mutation({
+export const deleteObject = mutation({
   args: {
     key: v.string(),
   },
   handler: async (ctx, args) => {
-    return await r2.deleteByKey(args.key);
+    return await r2.deleteObject(ctx, args.key);
   },
 });
 ```
