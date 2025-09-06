@@ -191,6 +191,8 @@ export declare const components: {
             logLevel: "DEBUG" | "INFO" | "WARN" | "ERROR";
             maxFailures: number;
             onComplete?: string;
+            runAfter?: number;
+            runAt?: number;
           };
         },
         string
