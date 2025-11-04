@@ -1,6 +1,5 @@
 import { v, type GenericValidator, type Infer } from "convex/values";
 import { S3Client } from "@aws-sdk/client-s3";
-import type { Doc, TableNames } from "./component/_generated/dataModel";
 
 export const r2ConfigValidator = v.object({
   bucket: v.string(),
@@ -18,11 +17,6 @@ export const createR2Client = (args: Infer<typeof r2ConfigValidator>) => {
       secretAccessKey: args.secretAccessKey,
     },
   });
-};
-
-export const withoutSystemFields = <T extends Doc<TableNames>>(fields: T) => {
-  const { _id, _creationTime, ...rest } = fields;
-  return rest;
 };
 
 export const paginationReturnValidator = (docValidator: GenericValidator) =>

@@ -30,7 +30,7 @@ export default function App() {
     // the mutation is pending.
     const images = localStore.getQuery(api.example.listImages);
     const image = images?.find((image) => image._id === args.id);
-    if (image) {
+    if (image && args.caption) {
       image.caption = args.caption;
     }
   });

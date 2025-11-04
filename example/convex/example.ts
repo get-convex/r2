@@ -3,6 +3,7 @@ import { action, internalMutation, mutation, query } from "./_generated/server";
 import { components, internal } from "./_generated/api";
 import { R2, R2Callbacks } from "@convex-dev/r2";
 import { DataModel } from "./_generated/dataModel";
+
 const r2 = new R2(components.r2);
 
 const callbacks: R2Callbacks = internal.example;

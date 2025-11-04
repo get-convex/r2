@@ -12,9 +12,9 @@ import {
   createR2Client,
   paginationReturnValidator,
   r2ConfigValidator,
-  withoutSystemFields,
 } from "../shared";
-import { api, components } from "./_generated/api";
+import type { Doc, TableNames } from "./_generated/dataModel.js";
+import { api, components } from "./_generated/api.js";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { asyncMap } from "convex-helpers";
 import { paginator } from "convex-helpers/server/pagination";
@@ -245,3 +245,8 @@ export const deleteObject = mutation({
     await retrier.run(ctx, api.lib.deleteR2Object, args);
   },
 });
+
+export const withoutSystemFields = <T extends Doc<TableNames>>(fields: T) => {
+  const { _id, _creationTime, ...rest } = fields;
+  return rest;
+};
