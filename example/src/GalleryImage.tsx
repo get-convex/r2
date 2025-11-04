@@ -2,7 +2,7 @@ import { api } from "../convex/_generated/api";
 import { X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Id } from "../convex/_generated/dataModel";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 
 export const GalleryImage = ({
   image,
@@ -23,11 +23,9 @@ export const GalleryImage = ({
     onUpdateCaption(image._id, e.target.value);
   };
 
-  useEffect(() => {
-    if (!inputIsFocused) {
-      setCaption(image.caption);
-    }
-  }, [image.caption, inputIsFocused]);
+  if (!inputIsFocused && image.caption !== caption) {
+    setCaption(image.caption);
+  }
 
   return (
     <div key={image._id} className="relative group rounded-lg overflow-hidden">

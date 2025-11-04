@@ -10,6 +10,7 @@ export default [
       "dist/**",
       "eslint.config.js",
       "vitest.config.ts",
+      "example/*.config.js",
       "**/_generated/",
       "node10stubs.mjs",
     ],

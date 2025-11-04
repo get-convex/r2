@@ -1,7 +1,6 @@
 import {
   type ApiFromModules,
   createFunctionHandle,
-  type Expand,
   type FunctionReference,
   type GenericActionCtx,
   type GenericDataModel,
@@ -12,7 +11,7 @@ import {
   paginationOptsValidator,
   queryGeneric,
 } from "convex/server";
-import { v, type GenericId, type Infer } from "convex/values";
+import { v, type Infer } from "convex/values";
 import type { ComponentApi } from "../component/_generated/component.js";
 import { GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { S3Client } from "@aws-sdk/client-s3";
