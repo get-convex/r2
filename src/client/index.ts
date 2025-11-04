@@ -13,7 +13,7 @@ import {
   queryGeneric,
 } from "convex/server";
 import { GenericId, Infer, v } from "convex/values";
-import { api } from "../component/_generated/api";
+import type { ComponentApi } from "../component/_generated/component.js";
 import { GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
@@ -122,7 +122,7 @@ export class R2 {
    *   - `defaultBatchSize` - The default batch size to use for pagination.
    */
   constructor(
-    public component: UseApi<typeof api>,
+    public component: ComponentApi,
     public options: {
       R2_BUCKET?: string;
       R2_ENDPOINT?: string;
@@ -469,32 +469,3 @@ export class R2 {
     };
   }
 }
-
-/* Type utils follow */
-
-export type OpaqueIds<T> =
-  T extends GenericId<infer _T>
-    ? string
-    : T extends (infer U)[]
-      ? OpaqueIds<U>[]
-      : T extends object
-        ? { [K in keyof T]: OpaqueIds<T[K]> }
-        : T;
-
-export type UseApi<API> = Expand<{
-  [mod in keyof API]: API[mod] extends FunctionReference<
-    infer FType,
-    "public",
-    infer FArgs,
-    infer FReturnType,
-    infer FComponentPath
-  >
-    ? FunctionReference<
-        FType,
-        "internal",
-        OpaqueIds<FArgs>,
-        OpaqueIds<FReturnType>,
-        FComponentPath
-      >
-    : UseApi<API[mod]>;
-}>;

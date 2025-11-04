@@ -1,6 +1,6 @@
 /* eslint-disable */
 /**
- * Generated `api` utility.
+ * Generated `ComponentApi` utility.
  *
  * THIS CODE IS AUTOMATICALLY GENERATED.
  *
@@ -8,43 +8,26 @@
  * @module
  */
 
-import type * as example from "../example.js";
-
-import type {
-  ApiFromModules,
-  FilterApi,
-  FunctionReference,
-} from "convex/server";
+import type { FunctionReference } from "convex/server";
 
 /**
- * A utility for referencing Convex functions in your app's API.
+ * A utility for referencing a Convex component's API.
  *
  * Usage:
  * ```js
- * const myFunctionReference = api.myModule.myFunction;
+ * export type MyComponentApi = ComponentApi;
  * ```
  */
-declare const fullApi: ApiFromModules<{
-  example: typeof example;
-}>;
 
-export declare const api: FilterApi<
-  typeof fullApi,
-  FunctionReference<any, "public">
->;
-export declare const internal: FilterApi<
-  typeof fullApi,
-  FunctionReference<any, "internal">
->;
-
-export declare const components: {
-  r2: {
+export type ComponentApi<Name extends string | undefined = string | undefined> =
+  {
     lib: {
       deleteMetadata: FunctionReference<
         "mutation",
         "internal",
         { bucket: string; key: string },
-        null
+        null,
+        Name
       >;
       deleteObject: FunctionReference<
         "mutation",
@@ -56,7 +39,8 @@ export declare const components: {
           key: string;
           secretAccessKey: string;
         },
-        null
+        null,
+        Name
       >;
       deleteR2Object: FunctionReference<
         "action",
@@ -68,7 +52,8 @@ export declare const components: {
           key: string;
           secretAccessKey: string;
         },
-        null
+        null,
+        Name
       >;
       getMetadata: FunctionReference<
         "query",
@@ -90,7 +75,8 @@ export declare const components: {
           sha256?: string;
           size?: number;
           url: string;
-        } | null
+        } | null,
+        Name
       >;
       listMetadata: FunctionReference<
         "query",
@@ -119,7 +105,8 @@ export declare const components: {
           }>;
           pageStatus?: null | "SplitRecommended" | "SplitRequired";
           splitCursor?: null | string;
-        }
+        },
+        Name
       >;
       store: FunctionReference<
         "action",
@@ -131,7 +118,8 @@ export declare const components: {
           secretAccessKey: string;
           url: string;
         },
-        any
+        any,
+        Name
       >;
       syncMetadata: FunctionReference<
         "action",
@@ -144,7 +132,8 @@ export declare const components: {
           onComplete?: string;
           secretAccessKey: string;
         },
-        null
+        null,
+        Name
       >;
       upsertMetadata: FunctionReference<
         "mutation",
@@ -158,8 +147,8 @@ export declare const components: {
           sha256?: string;
           size?: number;
         },
-        { isNew: boolean }
+        { isNew: boolean },
+        Name
       >;
     };
   };
-};

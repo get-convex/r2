@@ -29,7 +29,7 @@ const response = await fetch(url);
 - [Create a Cloudflare account](https://cloudflare.com)
 - [Create an R2 bucket](https://developers.cloudflare.com/r2/buckets/create-buckets/)
 - Set the bucket name as an environment variable `R2_BUCKET` in your Convex
-  deployment
+  deployment via `npx convex env set R2_BUCKET <bucket-name>`.
 - [Add a CORS policy](https://developers.cloudflare.com/r2/buckets/cors/#add-cors-policies-from-the-dashboard) to the bucket allowing GET and PUT requests from your
   Convex app. You can also use '\*' to allow all origins (use with caution).
   ```json
@@ -117,12 +117,12 @@ File uploads to R2 typically use signed urls. The R2 component provides hooks fo
        // const user = await userFromAuth(ctx);
        // ...validate that the user can upload to this bucket
      },
-    onUpload: async (ctx, bucket, key) => {
-      // ...do something with the key
-      // This technically runs in the `syncMetadata` mutation, as the upload
-      // is performed from the client side. Will run if using the `useUploadFile`
-      // hook, or if `syncMetadata` function is called directly. Runs after the
-      // `checkUpload` callback.
+     onUpload: async (ctx, bucket, key) => {
+       // ...do something with the key
+       // This technically runs in the `syncMetadata` mutation, as the upload
+       // is performed from the client side. Will run if using the `useUploadFile`
+       // hook, or if `syncMetadata` function is called directly. Runs after the
+       // `checkUpload` callback.
      },
    });
    ```
