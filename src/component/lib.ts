@@ -27,7 +27,7 @@ const retrier = new ActionRetrier(components.actionRetrier);
 const getUrl = async (r2: S3Client, bucket: string, key: string) => {
   return await getSignedUrl(
     r2,
-    new GetObjectCommand({ Bucket: bucket, Key: key })
+    new GetObjectCommand({ Bucket: bucket, Key: key }),
   );
 };
 
@@ -63,7 +63,7 @@ export const getMetadata = query({
       url: v.string(),
       bucketLink: v.string(),
     }),
-    v.null()
+    v.null(),
   ),
   handler: async (ctx, args) => {
     const { key, ...r2Config } = args;
@@ -71,7 +71,7 @@ export const getMetadata = query({
     const metadata = await ctx.db
       .query("metadata")
       .withIndex("bucket_key", (q) =>
-        q.eq("bucket", args.bucket).eq("key", args.key)
+        q.eq("bucket", args.bucket).eq("key", args.key),
       )
       .unique();
     if (!metadata) {
@@ -96,7 +96,7 @@ export const listMetadata = query({
       ...schema.tables.metadata.validator.fields,
       url: v.string(),
       bucketLink: v.string(),
-    })
+    }),
   ),
   handler: async (ctx, args) => {
     const { limit, cursor, ...r2Config } = args;
@@ -128,7 +128,7 @@ export const upsertMetadata = mutation({
     const existingMetadata = await ctx.db
       .query("metadata")
       .withIndex("bucket_key", (q) =>
-        q.eq("bucket", args.bucket).eq("key", args.key)
+        q.eq("bucket", args.bucket).eq("key", args.key),
       )
       .unique();
     if (existingMetadata) {
@@ -202,7 +202,7 @@ export const deleteMetadata = mutation({
     const metadata = await ctx.db
       .query("metadata")
       .withIndex("bucket_key", (q) =>
-        q.eq("bucket", args.bucket).eq("key", args.key)
+        q.eq("bucket", args.bucket).eq("key", args.key),
       )
       .unique();
     if (metadata) {
@@ -221,7 +221,7 @@ export const deleteR2Object = action({
     const { key, ...r2Config } = args;
     const r2 = createR2Client(r2Config);
     await r2.send(
-      new DeleteObjectCommand({ Bucket: r2Config.bucket, Key: key })
+      new DeleteObjectCommand({ Bucket: r2Config.bucket, Key: key }),
     );
   },
 });
@@ -236,7 +236,7 @@ export const deleteObject = mutation({
     const metadata = await ctx.db
       .query("metadata")
       .withIndex("bucket_key", (q) =>
-        q.eq("bucket", args.bucket).eq("key", args.key)
+        q.eq("bucket", args.bucket).eq("key", args.key),
       )
       .unique();
     if (metadata) {

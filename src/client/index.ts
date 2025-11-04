@@ -42,12 +42,12 @@ const parseConfig = (config: Infer<typeof r2ConfigValidator>) => {
     secretAccessKey: "R2_SECRET_ACCESS_KEY",
   };
   const missingEnvVars = Object.keys(configVars).filter(
-    (key) => !config[key as keyof typeof config]
+    (key) => !config[key as keyof typeof config],
   );
   if (missingEnvVars.length > 0) {
     throw new Error(
       `R2 configuration is missing required fields:\n` +
-        `Missing: ${missingEnvVars.map((key) => configVars[key as keyof typeof configVars]).join(", ")}`
+        `Missing: ${missingEnvVars.map((key) => configVars[key as keyof typeof configVars]).join(", ")}`,
     );
   }
   return config;
@@ -129,7 +129,7 @@ export class R2 {
       R2_ACCESS_KEY_ID?: string;
       R2_SECRET_ACCESS_KEY?: string;
       defaultBatchSize?: number;
-    } = {}
+    } = {},
   ) {
     this.config = {
       bucket: options?.R2_BUCKET ?? process.env.R2_BUCKET!,
@@ -153,7 +153,7 @@ export class R2 {
     return await getSignedUrl(
       this.r2,
       new GetObjectCommand({ Bucket: this.config.bucket, Key: key }),
-      { expiresIn }
+      { expiresIn },
     );
   }
   /**
@@ -168,7 +168,7 @@ export class R2 {
     const key = customKey || crypto.randomUUID();
     const url = await getSignedUrl(
       this.r2,
-      new PutObjectCommand({ Bucket: this.config.bucket, Key: key })
+      new PutObjectCommand({ Bucket: this.config.bucket, Key: key }),
     );
     return { key, url };
   }
@@ -187,7 +187,7 @@ export class R2 {
   async store(
     ctx: RunActionCtx,
     file: Uint8Array | Buffer | Blob,
-    opts: string | { key?: string; type?: string } = {}
+    opts: string | { key?: string; type?: string } = {},
   ) {
     if (typeof opts === "string") {
       opts = { key: opts };
@@ -198,11 +198,11 @@ export class R2 {
         {
           key: opts.key,
           ...this.config,
-        }
+        },
       );
       if (existingMetadataForKey) {
         throw new Error(
-          `Metadata already exists for key ${opts.key}. Please use a unique key.`
+          `Metadata already exists for key ${opts.key}. Please use a unique key.`,
         );
       }
     }
@@ -311,34 +311,34 @@ export class R2 {
     checkReadKey?: (
       ctx: GenericQueryCtx<DataModel>,
       bucket: string,
-      key: string
+      key: string,
     ) => void | Promise<void>;
     checkReadBucket?: (
       ctx: GenericQueryCtx<DataModel>,
-      bucket: string
+      bucket: string,
     ) => void | Promise<void>;
     checkUpload?: (
       ctx: GenericQueryCtx<DataModel>,
-      bucket: string
+      bucket: string,
     ) => void | Promise<void>;
     checkDelete?: (
       ctx: GenericQueryCtx<DataModel>,
       bucket: string,
-      key: string
+      key: string,
     ) => void | Promise<void>;
     onUpload?: (
       ctx: GenericMutationCtx<DataModel>,
       bucket: string,
-      key: string
+      key: string,
     ) => void | Promise<void>;
     onSyncMetadata?: (
       ctx: GenericMutationCtx<DataModel>,
-      args: { bucket: string; key: string; isNew: boolean }
+      args: { bucket: string; key: string; isNew: boolean },
     ) => void | Promise<void>;
     onDelete?: (
       ctx: GenericMutationCtx<DataModel>,
       bucket: string,
-      key: string
+      key: string,
     ) => void | Promise<void>;
     callbacks?: R2Callbacks;
   }) {
@@ -413,7 +413,7 @@ export class R2 {
             url: v.string(),
             bucketLink: v.string(),
           }),
-          v.null()
+          v.null(),
         ),
         handler: async (ctx, args) => {
           if (opts?.checkReadKey) {
@@ -432,7 +432,7 @@ export class R2 {
             ...schema.tables.metadata.validator.fields,
             url: v.string(),
             bucketLink: v.string(),
-          })
+          }),
         ),
         handler: async (ctx, args) => {
           if (opts?.checkReadBucket) {
@@ -441,7 +441,7 @@ export class R2 {
           return this.listMetadata(
             ctx,
             args.paginationOpts.numItems,
-            args.paginationOpts.cursor
+            args.paginationOpts.cursor,
           );
         },
       }),

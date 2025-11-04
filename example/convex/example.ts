@@ -82,7 +82,7 @@ export const listImages = query({
       images.map(async (image) => ({
         ...image,
         url: await r2.getUrl(image.key),
-      }))
+      })),
     );
   },
 });

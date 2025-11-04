@@ -29,7 +29,7 @@ export const paginationReturnValidator = (docValidator: GenericValidator) =>
       v.union(
         v.null(),
         v.literal("SplitRecommended"),
-        v.literal("SplitRequired")
-      )
+        v.literal("SplitRequired"),
+      ),
     ),
   });

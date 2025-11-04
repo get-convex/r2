@@ -14,5 +14,5 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         <App />
       </ConvexProvider>
     </ThemeProvider>
-  </React.StrictMode>
+  </React.StrictMode>,
 );

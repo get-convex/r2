@@ -9,7 +9,7 @@ import { useConvexClient } from "convex-svelte";
  * @returns A function that uploads a file to R2.
  */
 export function useUploadFile(
-  api: Pick<ClientApi, "generateUploadUrl" | "syncMetadata">
+  api: Pick<ClientApi, "generateUploadUrl" | "syncMetadata">,
 ) {
   const client = useConvexClient();
 

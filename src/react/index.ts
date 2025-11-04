@@ -13,7 +13,7 @@ import type { ClientApi } from "../client";
  * @returns A function that uploads a file to R2.
  */
 export function useUploadFile(
-  api: Pick<ClientApi, "generateUploadUrl" | "syncMetadata">
+  api: Pick<ClientApi, "generateUploadUrl" | "syncMetadata">,
 ) {
   const generateUploadUrl = useMutation(api.generateUploadUrl);
   const syncMetadata = useMutation(api.syncMetadata);
@@ -36,6 +36,6 @@ export function useUploadFile(
       await syncMetadata({ key });
       return key;
     },
-    [generateUploadUrl, syncMetadata]
+    [generateUploadUrl, syncMetadata],
   );
 }

@@ -30,8 +30,9 @@ const response = await fetch(url);
 - [Create an R2 bucket](https://developers.cloudflare.com/r2/buckets/create-buckets/)
 - Set the bucket name as an environment variable `R2_BUCKET` in your Convex
   deployment via `npx convex env set R2_BUCKET <bucket-name>`.
-- [Add a CORS policy](https://developers.cloudflare.com/r2/buckets/cors/#add-cors-policies-from-the-dashboard) to the bucket allowing GET and PUT requests from your
-  Convex app. You can also use '\*' to allow all origins (use with caution).
+- [Add a CORS policy](https://developers.cloudflare.com/r2/buckets/cors/#add-cors-policies-from-the-dashboard)
+  to the bucket allowing GET and PUT requests from your Convex app. You can also
+  use '\*' to allow all origins (use with caution).
   ```json
   [
     {
@@ -58,7 +59,8 @@ const response = await fetch(url);
 
 ### Convex App
 
-You'll need a Convex App to use the component. Follow any of the [Convex quickstarts](https://docs.convex.dev/home) to set one up.
+You'll need a Convex App to use the component. Follow any of the
+[Convex quickstarts](https://docs.convex.dev/home) to set one up.
 
 ## Installation
 
@@ -68,7 +70,8 @@ Install the component package:
 npm install @convex-dev/r2
 ```
 
-Create a `convex.config.ts` file in your app's `convex/` folder and install the component by calling `use`:
+Create a `convex.config.ts` file in your app's `convex/` folder and install the
+component by calling `use`:
 
 ```ts
 // convex/convex.config.ts
@@ -92,12 +95,13 @@ npx convex env set R2_BUCKET xxxxx
 ```
 
 Note: All of these values can also be supplied as the second argument to `R2`.
-This enables storing values in multiple buckets using the same component.
-It also enables dynamically setting the values at runtime.
+This enables storing values in multiple buckets using the same component. It
+also enables dynamically setting the values at runtime.
 
 ## Uploading files
 
-File uploads to R2 typically use signed urls. The R2 component provides hooks for React and Svelte that handle the entire upload process:
+File uploads to R2 typically use signed urls. The R2 component provides hooks
+for React and Svelte that handle the entire upload process:
 
 - generates the signed url
 - uploads the file to R2
@@ -210,11 +214,12 @@ File uploads to R2 typically use signed urls. The R2 component provides hooks fo
 ### Using a custom object key
 
 The `r2.generateUploadUrl` function generates a uuid to use as the object key by
-default, but a custom key can be provided if desired. Note: the `generateUploadUrl`
-function returned by `r2.clientApi` does not accept a custom key, as that
-function is a mutation to be called from the client side and you don't want your
-client defining your object keys. Providing a custom key requires making your
-own mutation that calls the `generateUploadUrl` method of the `r2` instance.
+default, but a custom key can be provided if desired. Note: the
+`generateUploadUrl` function returned by `r2.clientApi` does not accept a custom
+key, as that function is a mutation to be called from the client side and you
+don't want your client defining your object keys. Providing a custom key
+requires making your own mutation that calls the `generateUploadUrl` method of
+the `r2` instance.
 
 ```ts
 // convex/example.ts
@@ -241,7 +246,9 @@ export const generateUploadUrlWithCustomKey = mutation({
 
 ## Storing Files from Actions
 
-Files can be stored in R2 directly from actions using the `r2.store` method. This is useful when you need to store files that are generated or downloaded on the server side.
+Files can be stored in R2 directly from actions using the `r2.store` method.
+This is useful when you need to store files that are generated or downloaded on
+the server side.
 
 ```ts
 // convex/example.ts
@@ -280,11 +287,13 @@ The `store` method:
 
 ## Serving Files
 
-Files stored in R2 can be served to your users by generating a URL pointing to a given file.
+Files stored in R2 can be served to your users by generating a URL pointing to a
+given file.
 
 ### Generating file URLs in queries
 
-The simplest way to serve files is to return URLs along with other data required by your app from queries and mutations.
+The simplest way to serve files is to return URLs along with other data required
+by your app from queries and mutations.
 
 A file URL can be generated from a object key by the `r2.getUrl` function of the
 R2 component client.
@@ -311,9 +320,9 @@ export const list = query({
           {
             // Custom expiration time in seconds, default is 900 (15 minutes)
             expiresIn: 60 * 60 * 24, // 1 day
-          }
+          },
         ),
-      }))
+      })),
     );
   },
 });
@@ -330,7 +339,8 @@ function Image({ message }: { message: { url: string } }) {
 
 ## Deleting Files
 
-Files stored in R2 can be deleted from actions or mutations via the `r2.deleteObject` function, which accepts an object key.
+Files stored in R2 can be deleted from actions or mutations via the
+`r2.deleteObject` function, which accepts an object key.
 
 ```ts
 // convex/images.ts
@@ -390,7 +400,8 @@ The returned document has the following fields:
 
 ### Listing and paginating metadata
 
-Metadata can be listed or paginated from actions via `r2.listMetadata` and `r2.pageMetadata`.
+Metadata can be listed or paginated from actions via `r2.listMetadata` and
+`r2.pageMetadata`.
 
 ```ts
 // convex/example.ts
@@ -451,7 +462,7 @@ export const { generateUploadUrl, syncMetadata, onSyncMetadata } = r2.clientApi(
       // log metadata of synced object
       console.log("metadata", metadata);
     },
-  }
+  },
 );
 ```
 
