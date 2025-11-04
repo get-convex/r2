@@ -1,6 +1,6 @@
-import { GenericValidator, Infer, v } from "convex/values";
+import { v, type GenericValidator, type Infer } from "convex/values";
 import { S3Client } from "@aws-sdk/client-s3";
-import { Doc, TableNames } from "./component/_generated/dataModel";
+import type { Doc, TableNames } from "./component/_generated/dataModel";
 
 export const r2ConfigValidator = v.object({
   bucket: v.string(),

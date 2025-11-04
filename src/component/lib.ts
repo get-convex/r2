@@ -19,7 +19,7 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { asyncMap } from "convex-helpers";
 import { paginator } from "convex-helpers/server/pagination";
 import { ActionRetrier } from "@convex-dev/action-retrier";
-import { R2Callbacks } from "../client";
+import type { R2Callbacks } from "../client";
 
 const DEFAULT_LIST_LIMIT = 100;
 const retrier = new ActionRetrier(components.actionRetrier);
