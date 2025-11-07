@@ -1,4 +1,4 @@
-import type { ClientApi } from "../client";
+import type { ClientApi } from "../client/index.js";
 import { useConvexClient } from "convex-svelte";
 
 /**

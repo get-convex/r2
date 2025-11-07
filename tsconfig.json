@@ -10,8 +10,10 @@
     "forceConsistentCasingInFileNames": true,
     "allowSyntheticDefaultImports": true,
     "noErrorTruncation": true,
-    "module": "ESNext",
-    "moduleResolution": "Bundler",
+    // We enforce stricter module resolution for Node16 compatibility
+    // But when building we use Bundler & ESNext for ESM
+    "module": "Node16",
+    "moduleResolution": "NodeNext",
 
     "composite": true,
     "isolatedModules": true,

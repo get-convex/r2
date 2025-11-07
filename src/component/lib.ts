@@ -1,6 +1,6 @@
-import { action, mutation, query } from "./_generated/server";
+import { action, mutation, query } from "./_generated/server.js";
 import { v } from "convex/values";
-import schema from "./schema";
+import schema from "./schema.js";
 import {
   DeleteObjectCommand,
   GetObjectCommand,
@@ -12,14 +12,14 @@ import {
   createR2Client,
   paginationReturnValidator,
   r2ConfigValidator,
-} from "../shared";
+} from "../shared.js";
 import type { Doc, TableNames } from "./_generated/dataModel.js";
 import { api, components } from "./_generated/api.js";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { asyncMap } from "convex-helpers";
 import { paginator } from "convex-helpers/server/pagination";
 import { ActionRetrier } from "@convex-dev/action-retrier";
-import type { R2Callbacks } from "../client";
+import type { R2Callbacks } from "../client/index.js";
 
 const DEFAULT_LIST_LIMIT = 100;
 const retrier = new ActionRetrier(components.actionRetrier);

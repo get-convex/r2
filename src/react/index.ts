@@ -1,6 +1,6 @@
 import { useMutation } from "convex/react";
 import { useCallback } from "react";
-import type { ClientApi } from "../client";
+import type { ClientApi } from "../client/index.js";
 
 /**
  * A hook that allows you to upload a file to R2.

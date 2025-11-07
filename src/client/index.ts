@@ -20,8 +20,8 @@ import {
   createR2Client,
   paginationReturnValidator,
   r2ConfigValidator,
-} from "../shared";
-import schema from "../component/schema";
+} from "../shared.js";
+import schema from "../component/schema.js";
 import { v4 as uuidv4 } from "uuid";
 import { fileTypeFromBuffer } from "file-type";
 
