@@ -1,8 +1,15 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { v } from "convex/values";
-import { action, internalMutation, mutation, query } from "./_generated/server";
-import { components, internal } from "./_generated/api";
+import {
+  action,
+  internalMutation,
+  mutation,
+  query,
+} from "./_generated/server.js";
+import { components, internal } from "./_generated/api.js";
 import { R2, R2Callbacks } from "@convex-dev/r2";
-import { DataModel } from "./_generated/dataModel";
+import type { DataModel } from "./_generated/dataModel.js";
+
 const r2 = new R2(components.r2);
 
 const callbacks: R2Callbacks = internal.example;
@@ -81,7 +88,7 @@ export const listImages = query({
       images.map(async (image) => ({
         ...image,
         url: await r2.getUrl(image.key),
-      }))
+      })),
     );
   },
 });

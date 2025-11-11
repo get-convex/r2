@@ -20,17 +20,17 @@ export default function App() {
   const convex = useConvex();
   const uploadFile = useUploadFile(api.example);
   const generateRandomImage = useAction(
-    api.example.generateAndStoreRandomImage
+    api.example.generateAndStoreRandomImage,
   );
   const [isGenerating, setIsGenerating] = useState(false);
   const updateImageCaption = useMutation(
-    api.example.updateImageCaption
+    api.example.updateImageCaption,
   ).withOptimisticUpdate((localStore, args) => {
     // A small optimistic update function to synchronously update the UI while
     // the mutation is pending.
     const images = localStore.getQuery(api.example.listImages);
     const image = images?.find((image) => image._id === args.id);
-    if (image) {
+    if (image && args.caption) {
       image.caption = args.caption;
     }
   });
@@ -43,7 +43,7 @@ export default function App() {
   const metadata = usePaginatedQuery(
     api.example.listMetadata,
     {},
-    { initialNumItems: 20 }
+    { initialNumItems: 20 },
   );
   console.log("metadata", metadata.results.length);
 
@@ -63,7 +63,7 @@ export default function App() {
     100,
     {
       maxWait: 100,
-    }
+    },
   );
 
   return (

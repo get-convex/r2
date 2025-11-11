@@ -1,6 +1,6 @@
-import { action, mutation, query } from "./_generated/server";
+import { action, mutation, query } from "./_generated/server.js";
 import { v } from "convex/values";
-import schema from "./schema";
+import schema from "./schema.js";
 import {
   DeleteObjectCommand,
   GetObjectCommand,
@@ -12,14 +12,14 @@ import {
   createR2Client,
   paginationReturnValidator,
   r2ConfigValidator,
-  withoutSystemFields,
-} from "../shared";
-import { api, components } from "./_generated/api";
+} from "../shared.js";
+import type { Doc, TableNames } from "./_generated/dataModel.js";
+import { api, components } from "./_generated/api.js";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { asyncMap } from "convex-helpers";
 import { paginator } from "convex-helpers/server/pagination";
 import { ActionRetrier } from "@convex-dev/action-retrier";
-import { R2Callbacks } from "../client";
+import type { R2Callbacks } from "../client/index.js";
 
 const DEFAULT_LIST_LIMIT = 100;
 const retrier = new ActionRetrier(components.actionRetrier);
@@ -27,7 +27,7 @@ const retrier = new ActionRetrier(components.actionRetrier);
 const getUrl = async (r2: S3Client, bucket: string, key: string) => {
   return await getSignedUrl(
     r2,
-    new GetObjectCommand({ Bucket: bucket, Key: key })
+    new GetObjectCommand({ Bucket: bucket, Key: key }),
   );
 };
 
@@ -63,7 +63,7 @@ export const getMetadata = query({
       url: v.string(),
       bucketLink: v.string(),
     }),
-    v.null()
+    v.null(),
   ),
   handler: async (ctx, args) => {
     const { key, ...r2Config } = args;
@@ -71,7 +71,7 @@ export const getMetadata = query({
     const metadata = await ctx.db
       .query("metadata")
       .withIndex("bucket_key", (q) =>
-        q.eq("bucket", args.bucket).eq("key", args.key)
+        q.eq("bucket", args.bucket).eq("key", args.key),
       )
       .unique();
     if (!metadata) {
@@ -96,7 +96,7 @@ export const listMetadata = query({
       ...schema.tables.metadata.validator.fields,
       url: v.string(),
       bucketLink: v.string(),
-    })
+    }),
   ),
   handler: async (ctx, args) => {
     const { limit, cursor, ...r2Config } = args;
@@ -128,7 +128,7 @@ export const upsertMetadata = mutation({
     const existingMetadata = await ctx.db
       .query("metadata")
       .withIndex("bucket_key", (q) =>
-        q.eq("bucket", args.bucket).eq("key", args.key)
+        q.eq("bucket", args.bucket).eq("key", args.key),
       )
       .unique();
     if (existingMetadata) {
@@ -202,7 +202,7 @@ export const deleteMetadata = mutation({
     const metadata = await ctx.db
       .query("metadata")
       .withIndex("bucket_key", (q) =>
-        q.eq("bucket", args.bucket).eq("key", args.key)
+        q.eq("bucket", args.bucket).eq("key", args.key),
       )
       .unique();
     if (metadata) {
@@ -221,7 +221,7 @@ export const deleteR2Object = action({
     const { key, ...r2Config } = args;
     const r2 = createR2Client(r2Config);
     await r2.send(
-      new DeleteObjectCommand({ Bucket: r2Config.bucket, Key: key })
+      new DeleteObjectCommand({ Bucket: r2Config.bucket, Key: key }),
     );
   },
 });
@@ -236,7 +236,7 @@ export const deleteObject = mutation({
     const metadata = await ctx.db
       .query("metadata")
       .withIndex("bucket_key", (q) =>
-        q.eq("bucket", args.bucket).eq("key", args.key)
+        q.eq("bucket", args.bucket).eq("key", args.key),
       )
       .unique();
     if (metadata) {
@@ -245,3 +245,8 @@ export const deleteObject = mutation({
     await retrier.run(ctx, api.lib.deleteR2Object, args);
   },
 });
+
+export const withoutSystemFields = <T extends Doc<TableNames>>(fields: T) => {
+  const { _id, _creationTime, ...rest } = fields;
+  return rest;
+};

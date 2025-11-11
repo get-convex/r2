@@ -1,6 +1,5 @@
-import { GenericValidator, Infer, v } from "convex/values";
+import { v, type GenericValidator, type Infer } from "convex/values";
 import { S3Client } from "@aws-sdk/client-s3";
-import { Doc, TableNames } from "./component/_generated/dataModel";
 
 export const r2ConfigValidator = v.object({
   bucket: v.string(),
@@ -20,11 +19,6 @@ export const createR2Client = (args: Infer<typeof r2ConfigValidator>) => {
   });
 };
 
-export const withoutSystemFields = <T extends Doc<TableNames>>(fields: T) => {
-  const { _id, _creationTime, ...rest } = fields;
-  return rest;
-};
-
 export const paginationReturnValidator = (docValidator: GenericValidator) =>
   v.object({
     page: v.array(docValidator),
@@ -35,7 +29,7 @@ export const paginationReturnValidator = (docValidator: GenericValidator) =>
       v.union(
         v.null(),
         v.literal("SplitRecommended"),
-        v.literal("SplitRequired")
-      )
+        v.literal("SplitRequired"),
+      ),
     ),
   });

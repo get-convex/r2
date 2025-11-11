@@ -1,19 +1,18 @@
 import {
-  ApiFromModules,
+  type ApiFromModules,
   createFunctionHandle,
-  Expand,
-  FunctionReference,
-  GenericActionCtx,
-  GenericDataModel,
-  GenericMutationCtx,
-  GenericQueryCtx,
+  type FunctionReference,
+  type GenericActionCtx,
+  type GenericDataModel,
+  type GenericMutationCtx,
+  type GenericQueryCtx,
   internalMutationGeneric,
   mutationGeneric,
   paginationOptsValidator,
   queryGeneric,
 } from "convex/server";
-import { GenericId, Infer, v } from "convex/values";
-import { api } from "../component/_generated/api";
+import { v, type Infer } from "convex/values";
+import type { ComponentApi } from "../component/_generated/component.js";
 import { GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
@@ -21,8 +20,8 @@ import {
   createR2Client,
   paginationReturnValidator,
   r2ConfigValidator,
-} from "../shared";
-import schema from "../component/schema";
+} from "../shared.js";
+import schema from "../component/schema.js";
 import { v4 as uuidv4 } from "uuid";
 import { fileTypeFromBuffer } from "file-type";
 
@@ -42,12 +41,12 @@ const parseConfig = (config: Infer<typeof r2ConfigValidator>) => {
     secretAccessKey: "R2_SECRET_ACCESS_KEY",
   };
   const missingEnvVars = Object.keys(configVars).filter(
-    (key) => !config[key as keyof typeof config]
+    (key) => !config[key as keyof typeof config],
   );
   if (missingEnvVars.length > 0) {
     throw new Error(
       `R2 configuration is missing required fields:\n` +
-        `Missing: ${missingEnvVars.map((key) => configVars[key as keyof typeof configVars]).join(", ")}`
+        `Missing: ${missingEnvVars.map((key) => configVars[key as keyof typeof configVars]).join(", ")}`,
     );
   }
   return config;
@@ -122,14 +121,14 @@ export class R2 {
    *   - `defaultBatchSize` - The default batch size to use for pagination.
    */
   constructor(
-    public component: UseApi<typeof api>,
+    public component: ComponentApi,
     public options: {
       R2_BUCKET?: string;
       R2_ENDPOINT?: string;
       R2_ACCESS_KEY_ID?: string;
       R2_SECRET_ACCESS_KEY?: string;
       defaultBatchSize?: number;
-    } = {}
+    } = {},
   ) {
     this.config = {
       bucket: options?.R2_BUCKET ?? process.env.R2_BUCKET!,
@@ -153,7 +152,7 @@ export class R2 {
     return await getSignedUrl(
       this.r2,
       new GetObjectCommand({ Bucket: this.config.bucket, Key: key }),
-      { expiresIn }
+      { expiresIn },
     );
   }
   /**
@@ -168,7 +167,7 @@ export class R2 {
     const key = customKey || crypto.randomUUID();
     const url = await getSignedUrl(
       this.r2,
-      new PutObjectCommand({ Bucket: this.config.bucket, Key: key })
+      new PutObjectCommand({ Bucket: this.config.bucket, Key: key }),
     );
     return { key, url };
   }
@@ -187,7 +186,7 @@ export class R2 {
   async store(
     ctx: RunActionCtx,
     file: Uint8Array | Buffer | Blob,
-    opts: string | { key?: string; type?: string } = {}
+    opts: string | { key?: string; type?: string } = {},
   ) {
     if (typeof opts === "string") {
       opts = { key: opts };
@@ -198,11 +197,11 @@ export class R2 {
         {
           key: opts.key,
           ...this.config,
-        }
+        },
       );
       if (existingMetadataForKey) {
         throw new Error(
-          `Metadata already exists for key ${opts.key}. Please use a unique key.`
+          `Metadata already exists for key ${opts.key}. Please use a unique key.`,
         );
       }
     }
@@ -311,34 +310,34 @@ export class R2 {
     checkReadKey?: (
       ctx: GenericQueryCtx<DataModel>,
       bucket: string,
-      key: string
+      key: string,
     ) => void | Promise<void>;
     checkReadBucket?: (
       ctx: GenericQueryCtx<DataModel>,
-      bucket: string
+      bucket: string,
     ) => void | Promise<void>;
     checkUpload?: (
       ctx: GenericQueryCtx<DataModel>,
-      bucket: string
+      bucket: string,
     ) => void | Promise<void>;
     checkDelete?: (
       ctx: GenericQueryCtx<DataModel>,
       bucket: string,
-      key: string
+      key: string,
     ) => void | Promise<void>;
     onUpload?: (
       ctx: GenericMutationCtx<DataModel>,
       bucket: string,
-      key: string
+      key: string,
     ) => void | Promise<void>;
     onSyncMetadata?: (
       ctx: GenericMutationCtx<DataModel>,
-      args: { bucket: string; key: string; isNew: boolean }
+      args: { bucket: string; key: string; isNew: boolean },
     ) => void | Promise<void>;
     onDelete?: (
       ctx: GenericMutationCtx<DataModel>,
       bucket: string,
-      key: string
+      key: string,
     ) => void | Promise<void>;
     callbacks?: R2Callbacks;
   }) {
@@ -413,7 +412,7 @@ export class R2 {
             url: v.string(),
             bucketLink: v.string(),
           }),
-          v.null()
+          v.null(),
         ),
         handler: async (ctx, args) => {
           if (opts?.checkReadKey) {
@@ -432,7 +431,7 @@ export class R2 {
             ...schema.tables.metadata.validator.fields,
             url: v.string(),
             bucketLink: v.string(),
-          })
+          }),
         ),
         handler: async (ctx, args) => {
           if (opts?.checkReadBucket) {
@@ -441,7 +440,7 @@ export class R2 {
           return this.listMetadata(
             ctx,
             args.paginationOpts.numItems,
-            args.paginationOpts.cursor
+            args.paginationOpts.cursor,
           );
         },
       }),
@@ -469,32 +468,3 @@ export class R2 {
     };
   }
 }
-
-/* Type utils follow */
-
-export type OpaqueIds<T> =
-  T extends GenericId<infer _T>
-    ? string
-    : T extends (infer U)[]
-      ? OpaqueIds<U>[]
-      : T extends object
-        ? { [K in keyof T]: OpaqueIds<T[K]> }
-        : T;
-
-export type UseApi<API> = Expand<{
-  [mod in keyof API]: API[mod] extends FunctionReference<
-    infer FType,
-    "public",
-    infer FArgs,
-    infer FReturnType,
-    infer FComponentPath
-  >
-    ? FunctionReference<
-        FType,
-        "internal",
-        OpaqueIds<FArgs>,
-        OpaqueIds<FReturnType>,
-        FComponentPath
-      >
-    : UseApi<API[mod]>;
-}>;
