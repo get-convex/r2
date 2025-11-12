@@ -12,7 +12,6 @@ export default [
       "vitest.config.ts",
       "example/*.config.js",
       "**/_generated/",
-      "node10stubs.mjs",
     ],
   },
   {
