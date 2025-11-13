@@ -2,6 +2,7 @@
 import type { TestConvex } from "convex-test";
 import type { GenericSchema, SchemaDefinition } from "convex/server";
 import schema from "./component/schema.js";
+import actionRetrier from "@convex-dev/action-retrier/test";
 const modules = import.meta.glob("./component/**/*.ts");
 
 /**
@@ -14,5 +15,6 @@ export function register(
   name: string = "r2",
 ) {
   t.registerComponent(name, schema, modules);
+  actionRetrier.register(t);
 }
 export default { register, schema, modules };
