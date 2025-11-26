@@ -178,8 +178,9 @@ export class R2 {
    * @param ctx - A Convex action context.
    * @param blob - The blob to store.
    * @param opts - Optional config object.
-   *   - `key` - A custom R2 object key to use (uuid if not provided).
-   *   - `type` - The MIME type of the blob (will be inferred if not provided).
+   *   - `key`          - A custom R2 object key to use (uuid if not provided).
+   *   - `type`         - The MIME type of the blob (will be inferred if not provided).
+   *   - `disposition`  - The ContentDisposition header to let the browser know how to handle the file.
    * @returns A promise that resolves to the key of the stored object.
    */
 
