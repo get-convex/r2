@@ -186,7 +186,7 @@ export class R2 {
   async store(
     ctx: RunActionCtx,
     file: Uint8Array | Buffer | Blob,
-    opts: string | { key?: string; type?: string } = {},
+    opts: string | { key?: string; type?: string; disposition?: string, } = {},
   ) {
     if (typeof opts === "string") {
       opts = { key: opts };
@@ -215,6 +215,7 @@ export class R2 {
       Key: key,
       Body: parsedFile,
       ContentType: opts.type || fileType,
+      ContentDisposition: opts.disposition,
     });
     await this.r2.send(command);
     await ctx.runAction(this.component.lib.syncMetadata, {
