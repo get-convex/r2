@@ -48,51 +48,5 @@ export const internal: FilterApi<
 > = anyApi as any;
 
 export const components = componentsGeneric() as unknown as {
-  actionRetrier: {
-    public: {
-      cancel: FunctionReference<
-        "mutation",
-        "internal",
-        { runId: string },
-        boolean
-      >;
-      cleanup: FunctionReference<
-        "mutation",
-        "internal",
-        { runId: string },
-        any
-      >;
-      start: FunctionReference<
-        "mutation",
-        "internal",
-        {
-          functionArgs: any;
-          functionHandle: string;
-          options: {
-            base: number;
-            initialBackoffMs: number;
-            logLevel: "DEBUG" | "INFO" | "WARN" | "ERROR";
-            maxFailures: number;
-            onComplete?: string;
-            runAfter?: number;
-            runAt?: number;
-          };
-        },
-        string
-      >;
-      status: FunctionReference<
-        "query",
-        "internal",
-        { runId: string },
-        | { type: "inProgress" }
-        | {
-            result:
-              | { returnValue: any; type: "success" }
-              | { error: string; type: "failed" }
-              | { type: "canceled" };
-            type: "completed";
-          }
-      >;
-    };
-  };
+  actionRetrier: import("@convex-dev/action-retrier/_generated/component.js").ComponentApi<"actionRetrier">;
 };
