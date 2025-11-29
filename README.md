@@ -267,10 +267,12 @@ export const store = internalAction({
     // This function call is the only required part, it uploads the blob to R2,
     // syncs the metadata, and returns the key. The key is a uuid by default, but
     // an optional custom key can be provided in the options object. A MIME type
-    // can also be provided, which will override the type inferred for blobs.
+    // can also be provided, which will override the type inferred for blobs. A
+    // Content-Disposition can also be provided if necessary.
     const key = await r2.store(ctx, blob, {
       key: "my-custom-key",
       type: "image/jpeg",
+      disposition: "attachment; filename=example.jpg"
     });
 
     // Example use case, associate the key with a record in your database
