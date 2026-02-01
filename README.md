@@ -131,16 +131,22 @@ for React and Svelte that handle the entire upload process:
 - uploads the file to R2
 - stores the file's metadata in your Convex database
 
+**Important**: For proper TypeScript typing in your callbacks, pass your `DataModel` type as a generic parameter to `r2.clientApi<DataModel>()`. This ensures that `ctx` parameters are properly typed with your database schema, and queries return `Doc<"tableName">` instead of `GenericDocument`.
+
 1. Instantiate a R2 component client in a file in your app's `convex/` folder:
 
    ```ts
    // convex/example.ts
    import { R2 } from "@convex-dev/r2";
    import { components } from "./_generated/api";
+   import type { DataModel } from "./_generated/dataModel";
 
    export const r2 = new R2(components.r2);
 
-   export const { generateUploadUrl, syncMetadata } = r2.clientApi({
+   // Pass DataModel as a generic type parameter to get proper TypeScript typing
+   // for all callback contexts. Without this, ctx will be typed as GenericDocument
+   // instead of your specific table types.
+   export const { generateUploadUrl, syncMetadata } = r2.clientApi<DataModel>({
      checkUpload: async (ctx, bucket) => {
        // const user = await userFromAuth(ctx);
        // ...validate that the user can upload to this bucket
@@ -468,12 +474,13 @@ access the metadata of the newly uploaded file.
 // convex/example.ts
 import { R2, type R2Callbacks } from "@convex-dev/r2";
 import { components } from "./_generated/api";
+import type { DataModel } from "./_generated/dataModel";
 
 export const r2 = new R2(components.r2);
 
 const callbacks: R2Callbacks = internal.example;
 
-export const { generateUploadUrl, syncMetadata, onSyncMetadata } = r2.clientApi(
+export const { generateUploadUrl, syncMetadata, onSyncMetadata } = r2.clientApi<DataModel>(
   {
     // Pass the functions from this file back into the component.
     // Technically only an object with `onSyncMetadata` is required, the recommended
