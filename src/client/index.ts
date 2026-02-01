@@ -95,7 +95,25 @@ type RunActionCtx = {
 
 export class R2 {
   public readonly config: Infer<typeof r2ConfigValidator>;
-  public readonly r2: S3Client;
+  private _client: S3Client | undefined;
+
+  /**
+   * The configured S3Client for direct access to the R2 bucket.
+   */
+  get client(): S3Client {
+    if (!this._client) {
+      this._client = createR2Client(parseConfig(this.config));
+    }
+    return this._client;
+  }
+
+  /**
+   * @deprecated Use `client` instead.
+   */
+  get r2(): S3Client {
+    return this.client;
+  }
+
   /**
    * Backend API for the R2 component.
    * Responsible for exposing the `client` API to the client, and having
@@ -137,7 +155,6 @@ export class R2 {
       secretAccessKey:
         options?.R2_SECRET_ACCESS_KEY ?? process.env.R2_SECRET_ACCESS_KEY!,
     };
-    this.r2 = createR2Client(parseConfig(this.config));
   }
   /**
    * Get a signed URL for serving an object from R2.
@@ -150,7 +167,7 @@ export class R2 {
   async getUrl(key: string, options: { expiresIn?: number } = {}) {
     const { expiresIn = 900 } = options;
     return await getSignedUrl(
-      this.r2,
+      this.client,
       new GetObjectCommand({ Bucket: this.config.bucket, Key: key }),
       { expiresIn },
     );
@@ -166,7 +183,7 @@ export class R2 {
   async generateUploadUrl(customKey?: string) {
     const key = customKey || crypto.randomUUID();
     const url = await getSignedUrl(
-      this.r2,
+      this.client,
       new PutObjectCommand({ Bucket: this.config.bucket, Key: key }),
     );
     return { key, url };
@@ -218,7 +235,7 @@ export class R2 {
       ContentType: opts.type || fileType,
       ContentDisposition: opts.disposition,
     });
-    await this.r2.send(command);
+    await this.client.send(command);
     await ctx.runAction(this.component.lib.syncMetadata, {
       key: key,
       ...this.config,
