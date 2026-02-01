@@ -94,8 +94,31 @@ type RunActionCtx = {
 };
 
 export class R2 {
-  public readonly config: Infer<typeof r2ConfigValidator>;
-  public readonly r2: S3Client;
+  private _config: Infer<typeof r2ConfigValidator> | undefined;
+  private _r2: S3Client | undefined;
+
+  get config(): Infer<typeof r2ConfigValidator> {
+    if (!this._config) {
+      this._config = parseConfig({
+        bucket: this.options?.R2_BUCKET ?? process.env.R2_BUCKET!,
+        endpoint: this.options?.R2_ENDPOINT ?? process.env.R2_ENDPOINT!,
+        accessKeyId:
+          this.options?.R2_ACCESS_KEY_ID ?? process.env.R2_ACCESS_KEY_ID!,
+        secretAccessKey:
+          this.options?.R2_SECRET_ACCESS_KEY ??
+          process.env.R2_SECRET_ACCESS_KEY!,
+      });
+    }
+    return this._config;
+  }
+
+  get r2(): S3Client {
+    if (!this._r2) {
+      this._r2 = createR2Client(this.config);
+    }
+    return this._r2;
+  }
+
   /**
    * Backend API for the R2 component.
    * Responsible for exposing the `client` API to the client, and having
@@ -129,16 +152,7 @@ export class R2 {
       R2_SECRET_ACCESS_KEY?: string;
       defaultBatchSize?: number;
     } = {},
-  ) {
-    this.config = {
-      bucket: options?.R2_BUCKET ?? process.env.R2_BUCKET!,
-      endpoint: options?.R2_ENDPOINT ?? process.env.R2_ENDPOINT!,
-      accessKeyId: options?.R2_ACCESS_KEY_ID ?? process.env.R2_ACCESS_KEY_ID!,
-      secretAccessKey:
-        options?.R2_SECRET_ACCESS_KEY ?? process.env.R2_SECRET_ACCESS_KEY!,
-    };
-    this.r2 = createR2Client(parseConfig(this.config));
-  }
+  ) {}
   /**
    * Get a signed URL for serving an object from R2.
    *
