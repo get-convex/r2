@@ -9,22 +9,35 @@ describe("R2 lazy initialization", () => {
     expect(() => new R2(mockComponent)).not.toThrow();
   });
 
-  it("throws with descriptive error when accessing r2 getter with missing config", () => {
-    const r2 = new R2(mockComponent);
+  it("throws with descriptive error when accessing client with missing config", () => {
+    const client = new R2(mockComponent);
 
-    expect(() => r2.r2).toThrow("R2 configuration is missing required fields");
-    expect(() => r2.r2).toThrow("R2_BUCKET");
+    expect(() => client.client).toThrow(
+      "R2 configuration is missing required fields",
+    );
+    expect(() => client.client).toThrow("R2_BUCKET");
   });
 
   it("creates S3Client when config is provided via options", () => {
-    const r2 = new R2(mockComponent, {
+    const client = new R2(mockComponent, {
       R2_BUCKET: "test-bucket",
       R2_ENDPOINT: "https://test.r2.cloudflarestorage.com",
       R2_ACCESS_KEY_ID: "test-key",
       R2_SECRET_ACCESS_KEY: "test-secret",
     });
 
-    expect(r2.config.bucket).toBe("test-bucket");
-    expect(() => r2.r2).not.toThrow();
+    expect(client.config.bucket).toBe("test-bucket");
+    expect(() => client.client).not.toThrow();
+  });
+
+  it("exposes deprecated r2 getter as alias for client", () => {
+    const client = new R2(mockComponent, {
+      R2_BUCKET: "test-bucket",
+      R2_ENDPOINT: "https://test.r2.cloudflarestorage.com",
+      R2_ACCESS_KEY_ID: "test-key",
+      R2_SECRET_ACCESS_KEY: "test-secret",
+    });
+
+    expect(client.r2).toBe(client.client);
   });
 });
