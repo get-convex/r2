@@ -94,9 +94,33 @@ npx convex env set R2_ENDPOINT xxxxx
 npx convex env set R2_BUCKET xxxxx
 ```
 
-Note: All of these values can also be supplied as the second argument to `R2`.
-This enables storing values in multiple buckets using the same component. It
-also enables dynamically setting the values at runtime.
+Note: Environment variables are only needed if you don't pass config directly
+to the `R2` constructor. You can also pass individual values to override
+specific environment variables.
+
+### Using multiple buckets
+
+To use multiple R2 buckets, create separate `R2` instances with different
+config:
+
+```ts
+import { R2 } from "@convex-dev/r2";
+import { components } from "./_generated/api";
+
+// Primary bucket — reads from R2_* environment variables
+const primary = new R2(components.r2);
+
+// Archive bucket — configured explicitly
+const archive = new R2(components.r2, {
+  bucket: process.env.ARCHIVE_BUCKET!,
+  endpoint: process.env.ARCHIVE_ENDPOINT!,
+  accessKeyId: process.env.ARCHIVE_ACCESS_KEY_ID!,
+  secretAccessKey: process.env.ARCHIVE_SECRET_ACCESS_KEY!,
+});
+```
+
+Each instance maintains its own config and S3 client. Metadata from all
+buckets coexists in the same Convex table, indexed by bucket name.
 
 ## Uploading files
 

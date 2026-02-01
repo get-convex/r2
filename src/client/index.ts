@@ -34,19 +34,20 @@ export type R2Callbacks = {
 };
 
 const parseConfig = (config: Infer<typeof r2ConfigValidator>) => {
-  const configVars: Record<keyof typeof config, string> = {
+  const envVarNames: Record<keyof typeof config, string> = {
     bucket: "R2_BUCKET",
     endpoint: "R2_ENDPOINT",
     accessKeyId: "R2_ACCESS_KEY_ID",
     secretAccessKey: "R2_SECRET_ACCESS_KEY",
   };
-  const missingEnvVars = Object.keys(configVars).filter(
+  const missingFields = Object.keys(envVarNames).filter(
     (key) => !config[key as keyof typeof config],
   );
-  if (missingEnvVars.length > 0) {
+  if (missingFields.length > 0) {
     throw new Error(
-      `R2 configuration is missing required fields:\n` +
-        `Missing: ${missingEnvVars.map((key) => configVars[key as keyof typeof configVars]).join(", ")}`,
+      `R2 configuration is missing required fields: ${missingFields.join(", ")}\n` +
+        `Set them via environment variables (${missingFields.map((key) => envVarNames[key as keyof typeof envVarNames]).join(", ")}) ` +
+        `or pass them as options to the R2 constructor.`,
     );
   }
   return config;
@@ -130,30 +131,45 @@ export class R2 {
    *
    * @param component - Generally `components.r2` from
    * `./_generated/api` once you've configured it in `convex.config.ts`.
-   * @param options - Optional config object, most properties usually set via
-   * environment variables.
-   *   - `R2_BUCKET` - The bucket to use for the R2 component.
-   *   - `R2_ENDPOINT` - The endpoint to use for the R2 component.
-   *   - `R2_ACCESS_KEY_ID` - The access key ID to use for the R2 component.
-   *   - `R2_SECRET_ACCESS_KEY` - The secret access key to use for the R2 component.
+   * @param options - Optional config object. If not provided, values are read
+   * from environment variables.
+   *   - `bucket` - The R2 bucket name. Falls back to `R2_BUCKET` env var.
+   *   - `endpoint` - The R2 endpoint URL. Falls back to `R2_ENDPOINT` env var.
+   *   - `accessKeyId` - The R2 access key ID. Falls back to `R2_ACCESS_KEY_ID` env var.
+   *   - `secretAccessKey` - The R2 secret access key. Falls back to `R2_SECRET_ACCESS_KEY` env var.
    *   - `defaultBatchSize` - The default batch size to use for pagination.
    */
   constructor(
     public component: ComponentApi,
     public options: {
+      bucket?: string;
+      endpoint?: string;
+      accessKeyId?: string;
+      secretAccessKey?: string;
+      /** @deprecated Use `bucket` instead. */
       R2_BUCKET?: string;
+      /** @deprecated Use `endpoint` instead. */
       R2_ENDPOINT?: string;
+      /** @deprecated Use `accessKeyId` instead. */
       R2_ACCESS_KEY_ID?: string;
+      /** @deprecated Use `secretAccessKey` instead. */
       R2_SECRET_ACCESS_KEY?: string;
       defaultBatchSize?: number;
     } = {},
   ) {
     this.config = {
-      bucket: options?.R2_BUCKET ?? process.env.R2_BUCKET!,
-      endpoint: options?.R2_ENDPOINT ?? process.env.R2_ENDPOINT!,
-      accessKeyId: options?.R2_ACCESS_KEY_ID ?? process.env.R2_ACCESS_KEY_ID!,
+      bucket:
+        options?.bucket ?? options?.R2_BUCKET ?? process.env.R2_BUCKET!,
+      endpoint:
+        options?.endpoint ?? options?.R2_ENDPOINT ?? process.env.R2_ENDPOINT!,
+      accessKeyId:
+        options?.accessKeyId ??
+        options?.R2_ACCESS_KEY_ID ??
+        process.env.R2_ACCESS_KEY_ID!,
       secretAccessKey:
-        options?.R2_SECRET_ACCESS_KEY ?? process.env.R2_SECRET_ACCESS_KEY!,
+        options?.secretAccessKey ??
+        options?.R2_SECRET_ACCESS_KEY ??
+        process.env.R2_SECRET_ACCESS_KEY!,
     };
   }
   /**
