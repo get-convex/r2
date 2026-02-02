@@ -103,6 +103,7 @@
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.0",
     "@convex-dev/eslint-plugin": "^1.0.0",
+    "@convex-vue/core": "^0.0.4",
     "@edge-runtime/vm": "^5.0.0",
     "@eslint/eslintrc": "^3.3.1",
     "@eslint/js": "9.39.1",
@@ -145,6 +146,7 @@
     "use-debounce": "^10.0.6",
     "vite": "6.4.1",
     "vitest": "3.2.4",
+    "vue": "^3.5.27",
     "wrangler": "^4.45.2"
   },
   "types": "./dist/client/index.d.ts",
