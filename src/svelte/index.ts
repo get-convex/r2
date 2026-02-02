@@ -1,5 +1,6 @@
 import type { ClientApi } from "../client/index.js";
 import { useConvexClient } from "convex-svelte";
+import { uploadWithProgress } from "../client/upload.js";
 
 /**
  * A hook that allows you to upload a file to R2.
@@ -13,20 +14,14 @@ export function useUploadFile(
 ) {
   const client = useConvexClient();
 
-  return async (file: File) => {
+  return async (
+    file: File,
+    options?: {
+      onProgress?: (progress: { loaded: number; total: number }) => void;
+    },
+  ) => {
     const { url, key } = await client.mutation(api.generateUploadUrl, {});
-    try {
-      const result = await fetch(url, {
-        method: "PUT",
-        headers: { "Content-Type": file.type },
-        body: file,
-      });
-      if (!result.ok) {
-        throw new Error(`Failed to upload image: ${result.statusText}`);
-      }
-    } catch (error) {
-      throw new Error(`Failed to upload image: ${error}`);
-    }
+    await uploadWithProgress(url, file, options?.onProgress);
     await client.mutation(api.syncMetadata, { key });
     return key;
   };

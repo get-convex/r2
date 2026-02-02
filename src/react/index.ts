@@ -1,6 +1,7 @@
 import { useMutation } from "convex/react";
 import { useCallback } from "react";
 import type { ClientApi } from "../client/index.js";
+import { uploadWithProgress } from "../client/upload.js";
 
 /**
  * A hook that allows you to upload a file to R2.
@@ -19,20 +20,14 @@ export function useUploadFile(
   const syncMetadata = useMutation(api.syncMetadata);
 
   return useCallback(
-    async (file: File) => {
+    async (
+      file: File,
+      options?: {
+        onProgress?: (progress: { loaded: number; total: number }) => void;
+      },
+    ) => {
       const { url, key } = await generateUploadUrl();
-      try {
-        const result = await fetch(url, {
-          method: "PUT",
-          headers: { "Content-Type": file.type },
-          body: file,
-        });
-        if (!result.ok) {
-          throw new Error(`Failed to upload image: ${result.statusText}`);
-        }
-      } catch (error) {
-        throw new Error(`Failed to upload image: ${error}`);
-      }
+      await uploadWithProgress(url, file, options?.onProgress);
       await syncMetadata({ key });
       return key;
     },
