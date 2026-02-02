@@ -54,6 +54,10 @@
       "types": "./dist/svelte/index.d.ts",
       "default": "./dist/svelte/index.js"
     },
+    "./vue": {
+      "types": "./dist/vue/index.d.ts",
+      "default": "./dist/vue/index.js"
+    },
     "./test": "./src/test.ts",
     "./_generated/component.js": {
       "types": "./dist/component/_generated/component.d.ts"
@@ -68,11 +72,13 @@
     }
   },
   "peerDependencies": {
+    "@convex-vue/core": "^0.0.4",
     "convex": "^1.24.8",
     "convex-svelte": "^0.0.11",
     "react": "^18 || ^19",
     "react-dom": "^18 || ^19",
-    "svelte": ">=5.0.0"
+    "svelte": ">=5.0.0",
+    "vue": "^3.3.0"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.0",
