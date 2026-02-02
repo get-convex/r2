@@ -4,12 +4,8 @@ import type { ClientApi } from "../client/index.js";
 const mockMutation = vi.fn();
 const mockClient = { mutation: mockMutation };
 
-vi.mock("vue", () => ({
-  inject: vi.fn(() => mockClient),
-}));
-
-vi.mock("@convex-vue/core", () => ({
-  CONVEX_INJECTION_KEY: Symbol("convex"),
+vi.mock("convex-vue", () => ({
+  useConvexClient: vi.fn(() => mockClient),
 }));
 
 vi.mock("../client/upload.js", () => ({

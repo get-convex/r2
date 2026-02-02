@@ -72,16 +72,16 @@
     }
   },
   "peerDependencies": {
-    "@convex-vue/core": "^0.0.4",
     "convex": "^1.24.8",
     "convex-svelte": "^0.0.11",
+    "convex-vue": "^0.1.5",
     "react": "^18 || ^19",
     "react-dom": "^18 || ^19",
     "svelte": ">=5.0.0",
-    "vue": "^3.3.0"
+    "vue": "^3.5.0"
   },
   "peerDependenciesMeta": {
-    "@convex-vue/core": {
+    "convex-vue": {
       "optional": true
     },
     "convex-svelte": {
@@ -103,7 +103,6 @@
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.0",
     "@convex-dev/eslint-plugin": "^1.0.0",
-    "@convex-vue/core": "^0.0.4",
     "@edge-runtime/vm": "^5.0.0",
     "@eslint/eslintrc": "^3.3.1",
     "@eslint/js": "9.39.1",
@@ -123,6 +122,7 @@
     "convex": "1.29.3",
     "convex-helpers": "^0.1.104",
     "convex-test": "0.0.40",
+    "convex-vue": "^0.1.5",
     "cpy-cli": "^6.0.0",
     "eslint": "9.39.1",
     "eslint-plugin-react": "^7.37.5",

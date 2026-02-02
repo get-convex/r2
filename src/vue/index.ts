@@ -1,5 +1,4 @@
-import { inject } from "vue";
-import { CONVEX_INJECTION_KEY } from "@convex-vue/core";
+import { useConvexClient } from "convex-vue";
 import type { ClientApi } from "../client/index.js";
 import { uploadWithProgress } from "../client/upload.js";
 
@@ -13,12 +12,7 @@ import { uploadWithProgress } from "../client/upload.js";
 export function useUploadFile(
   api: Pick<ClientApi, "generateUploadUrl" | "syncMetadata">,
 ) {
-  const client = inject(CONVEX_INJECTION_KEY);
-  if (!client) {
-    throw new Error(
-      "Convex client not found. Make sure to use createConvexVue plugin.",
-    );
-  }
+  const client = useConvexClient();
 
   return async (
     file: File,
