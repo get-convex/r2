@@ -4,7 +4,8 @@ import { useConvexQuery, useConvexMutation } from "@convex-vue/core";
 import { useUploadFile } from "@convex-dev/r2/vue";
 import { api } from "../convex/_generated/api";
 
-// Type assertion: vue-tsc can't resolve FilterApi<T, FuncType> generic constraints across module boundaries
+// Workaround: vue-tsc can't resolve Convex's recursive FilterApi type across module boundaries.
+// Without this, mutations are incorrectly inferred as queries. See: https://github.com/vuejs/language-tools/issues/4577
 const r2Api = api.r2 as typeof api.r2 & {
   generateUploadUrl: typeof api.r2.listImages;
   syncMetadata: typeof api.r2.listImages;
