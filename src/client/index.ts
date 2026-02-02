@@ -214,13 +214,14 @@ export class R2 {
    *   - `key`          - A custom R2 object key to use (uuid if not provided).
    *   - `type`         - The MIME type of the blob (will be inferred if not provided).
    *   - `disposition`  - The ContentDisposition header to let the browser know how to handle the file.
+   *   - `cacheControl` - The Cache-Control header to set on the object (e.g. "max-age=3600").
    * @returns A promise that resolves to the key of the stored object.
    */
 
   async store(
     ctx: RunActionCtx,
     file: Uint8Array | Buffer | Blob,
-    opts: string | { key?: string; type?: string; disposition?: string, } = {},
+    opts: string | { key?: string; type?: string; disposition?: string; cacheControl?: string } = {},
   ) {
     if (typeof opts === "string") {
       opts = { key: opts };
@@ -250,6 +251,7 @@ export class R2 {
       Body: parsedFile,
       ContentType: opts.type || fileType,
       ContentDisposition: opts.disposition,
+      CacheControl: opts.cacheControl,
     });
     await this.client.send(command);
     await ctx.runAction(this.component.lib.syncMetadata, {
