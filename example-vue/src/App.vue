@@ -4,7 +4,7 @@ import { useConvexQuery, useConvexMutation } from "@convex-vue/core";
 import { useUploadFile } from "@convex-dev/r2/vue";
 import { api } from "../convex/_generated/api";
 
-// Type assertion needed because vue-tsc has trouble with FilterApi inference
+// Type assertion: vue-tsc can't resolve FilterApi<T, FuncType> generic constraints across module boundaries
 const r2Api = api.r2 as typeof api.r2 & {
   generateUploadUrl: typeof api.r2.listImages;
   syncMetadata: typeof api.r2.listImages;
@@ -23,13 +23,18 @@ async function handleUpload(event: Event) {
   if (!file) return;
 
   uploadProgress.value = 0;
-  const key = await uploadFile(file, {
-    onProgress: ({ loaded, total }) => {
-      uploadProgress.value = Math.round((loaded / total) * 100);
-    },
-  });
-  uploadProgress.value = null;
-  console.log("Uploaded:", key);
+  try {
+    const key = await uploadFile(file, {
+      onProgress: ({ loaded, total }) => {
+        uploadProgress.value = Math.round((loaded / total) * 100);
+      },
+    });
+    console.log("Uploaded:", key);
+  } catch (error) {
+    console.error("Upload failed:", error);
+  } finally {
+    uploadProgress.value = null;
+  }
 }
 </script>
 
