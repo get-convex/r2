@@ -23,6 +23,7 @@ export default function App() {
     api.example.generateAndStoreRandomImage,
   );
   const [isGenerating, setIsGenerating] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const updateImageCaption = useMutation(
     api.example.updateImageCaption,
   ).withOptimisticUpdate((localStore, args) => {
@@ -49,9 +50,15 @@ export default function App() {
 
   async function handleUpload(event: React.ChangeEvent<HTMLInputElement>) {
     event.preventDefault();
+    setUploadProgress(0);
     // `uploadFile` returns the key of the uploaded file, which you can use to
     // query that specific image
-    const key = await uploadFile(event.target.files![0]);
+    const key = await uploadFile(event.target.files![0], {
+      onProgress: ({ loaded, total }) => {
+        setUploadProgress(Math.round((loaded / total) * 100));
+      },
+    });
+    setUploadProgress(null);
     console.log("Uploaded image with key:", key);
   }
 
@@ -71,10 +78,10 @@ export default function App() {
       <h1 className="text-2xl font-bold my-4">Image Gallery</h1>
 
       <div className="mb-4 flex gap-2">
-        <Button variant="outline" className="gap-2" asChild>
+        <Button variant="outline" className="gap-2" asChild disabled={uploadProgress !== null}>
           <label htmlFor="image-upload" className="cursor-pointer">
             <Upload size={20} />
-            Upload Image
+            {uploadProgress !== null ? `Uploading ${uploadProgress}%` : "Upload Image"}
           </label>
         </Button>
         <Button
