@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.9.1
+
+- Add Vue hooks with `useUploadFile` composable (#28)
+
 ## 0.9.0
 
 - Add upload progress tracking via `onProgress` callback in React and Svelte
