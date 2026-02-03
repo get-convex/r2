@@ -54,6 +54,10 @@
       "types": "./dist/svelte/index.d.ts",
       "default": "./dist/svelte/index.js"
     },
+    "./vue": {
+      "types": "./dist/vue/index.d.ts",
+      "default": "./dist/vue/index.js"
+    },
     "./test": "./src/test.ts",
     "./_generated/component.js": {
       "types": "./dist/component/_generated/component.d.ts"
@@ -70,9 +74,31 @@
   "peerDependencies": {
     "convex": "^1.24.8",
     "convex-svelte": "^0.0.11",
+    "convex-vue": "^0.1.5",
     "react": "^18 || ^19",
     "react-dom": "^18 || ^19",
-    "svelte": ">=5.0.0"
+    "svelte": ">=5.0.0",
+    "vue": "^3.5.0"
+  },
+  "peerDependenciesMeta": {
+    "convex-vue": {
+      "optional": true
+    },
+    "convex-svelte": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    },
+    "svelte": {
+      "optional": true
+    },
+    "vue": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.0",
@@ -96,6 +122,7 @@
     "convex": "1.29.3",
     "convex-helpers": "^0.1.104",
     "convex-test": "0.0.40",
+    "convex-vue": "^0.1.5",
     "cpy-cli": "^6.0.0",
     "eslint": "9.39.1",
     "eslint-plugin-react": "^7.37.5",
@@ -119,6 +146,7 @@
     "use-debounce": "^10.0.6",
     "vite": "6.4.1",
     "vitest": "3.2.4",
+    "vue": "^3.5.27",
     "wrangler": "^4.45.2"
   },
   "types": "./dist/client/index.d.ts",
