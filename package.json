@@ -101,6 +101,12 @@
       "optional": true
     }
   },
+  "peerDependenciesMeta": {
+    "convex-svelte": { "optional": true },
+    "react": { "optional": true },
+    "react-dom": { "optional": true },
+    "svelte": { "optional": true }
+  },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.0",
     "@convex-dev/eslint-plugin": "^1.0.0",
