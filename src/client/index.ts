@@ -363,6 +363,11 @@ export class R2 {
       ctx: GenericQueryCtx<DataModel>,
       bucket: string,
     ) => void | Promise<void>;
+    /**
+     * Called during both `generateUploadUrl` (with `fileInfo`) and
+     * `syncMetadata` (without `fileInfo`). Implementations should
+     * treat `fileInfo` as optional — e.g. use `fileInfo?.size`.
+     */
     checkUpload?: (
       ctx: GenericQueryCtx<DataModel>,
       bucket: string,
@@ -403,6 +408,12 @@ export class R2 {
           url: v.string(),
         }),
         handler: async (ctx, args) => {
+          if (
+            args.fileSize !== undefined &&
+            (!Number.isInteger(args.fileSize) || args.fileSize < 0)
+          ) {
+            throw new Error("fileSize must be a non-negative integer");
+          }
           if (opts?.checkUpload) {
             await opts.checkUpload(ctx, this.config.bucket, {
               size: args.fileSize,

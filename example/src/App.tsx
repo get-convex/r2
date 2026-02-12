@@ -17,6 +17,8 @@ import { MetadataTable } from "./MetadataTable";
 import { GalleryImage } from "@/GalleryImage";
 import { useState } from "react";
 
+const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1MB — should match the server-side limit
+
 export default function App() {
   const convex = useConvex();
   const uploadFile = useUploadFile(api.example);
@@ -50,13 +52,12 @@ export default function App() {
   );
   console.log("metadata", metadata.results.length);
 
-  const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1MB — should match the server-side limit
-
   async function handleUpload(event: React.ChangeEvent<HTMLInputElement>) {
     event.preventDefault();
     setUploadError(null);
 
-    const file = event.target.files![0];
+    const file = event.target.files?.[0];
+    if (!file) return;
 
     // Client-side check for instant feedback without a server round-trip.
     // The server-side checkUpload callback still enforces this as a safety net.
