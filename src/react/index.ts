@@ -26,7 +26,11 @@ export function useUploadFile(
         onProgress?: (progress: { loaded: number; total: number }) => void;
       },
     ) => {
-      const { url, key } = await generateUploadUrl();
+      const { url, key } = await generateUploadUrl({
+        fileSize: file.size,
+        contentType: file.type,
+      });
+
       await uploadWithProgress(url, file, options?.onProgress);
       await syncMetadata({ key });
       return key;

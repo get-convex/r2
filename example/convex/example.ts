@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import {
   action,
   internalMutation,
@@ -28,9 +28,17 @@ export const {
   // The checkUpload callback is used for both `generateUploadUrl` and
   // `syncMetadata`.
   // In any of these checks, throw an error to reject the request.
-  checkUpload: async (ctx, bucket) => {
+  checkUpload: async (ctx, bucket, fileInfo) => {
     // const user = await userFromAuth(ctx);
     // ...validate that the user can upload to this bucket
+
+    // Example: enforce a 1MB file size limit
+    const maxSize = 1 * 1024 * 1024; // 1MB
+    if (fileInfo?.size && fileInfo.size > maxSize) {
+      throw new ConvexError(
+        `File is too large (${(fileInfo.size / 1024 / 1024).toFixed(1)}MB). Maximum size is ${maxSize / 1024 / 1024}MB.`,
+      );
+    }
   },
   checkReadKey: async (ctx, bucket, key) => {
     // const user = await userFromAuth(ctx);

@@ -1,4 +1,5 @@
 import { api } from "../convex/_generated/api";
+import { ConvexError } from "convex/values";
 import { useUploadFile } from "@convex-dev/r2/react";
 import { Upload, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,7 @@ export default function App() {
   );
   const [isGenerating, setIsGenerating] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const updateImageCaption = useMutation(
     api.example.updateImageCaption,
   ).withOptimisticUpdate((localStore, args) => {
@@ -48,18 +50,42 @@ export default function App() {
   );
   console.log("metadata", metadata.results.length);
 
+  const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1MB — should match the server-side limit
+
   async function handleUpload(event: React.ChangeEvent<HTMLInputElement>) {
     event.preventDefault();
+    setUploadError(null);
+
+    const file = event.target.files![0];
+
+    // Client-side check for instant feedback without a server round-trip.
+    // The server-side checkUpload callback still enforces this as a safety net.
+    if (file.size > MAX_FILE_SIZE) {
+      setUploadError(
+        `File is too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum size is ${MAX_FILE_SIZE / 1024 / 1024}MB.`,
+      );
+      return;
+    }
+
     setUploadProgress(0);
-    // `uploadFile` returns the key of the uploaded file, which you can use to
-    // query that specific image
-    const key = await uploadFile(event.target.files![0], {
-      onProgress: ({ loaded, total }) => {
-        setUploadProgress(Math.round((loaded / total) * 100));
-      },
-    });
-    setUploadProgress(null);
-    console.log("Uploaded image with key:", key);
+    try {
+      // `uploadFile` returns the key of the uploaded file, which you can use to
+      // query that specific image
+      const key = await uploadFile(file, {
+        onProgress: ({ loaded, total }) => {
+          setUploadProgress(Math.round((loaded / total) * 100));
+        },
+      });
+      console.log("Uploaded image with key:", key);
+    } catch (error) {
+      const message =
+        error instanceof ConvexError
+          ? (error.data as string)
+          : "Failed to upload file";
+      setUploadError(message);
+    } finally {
+      setUploadProgress(null);
+    }
   }
 
   // Debounce the updateImageCaption mutation to avoid blocking input changes.
@@ -112,6 +138,11 @@ export default function App() {
           className="hidden"
         />
       </div>
+      {uploadError && (
+        <div className="mb-4 p-3 rounded-md bg-destructive/10 text-destructive text-sm">
+          {uploadError}
+        </div>
+      )}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {images?.map((image) => (
           <GalleryImage
