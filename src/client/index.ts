@@ -415,10 +415,11 @@ export class R2 {
             throw new Error("fileSize must be a non-negative integer");
           }
           if (opts?.checkUpload) {
-            await opts.checkUpload(ctx, this.config.bucket, {
-              size: args.fileSize,
-              type: args.contentType,
-            });
+            const fileInfo =
+              args.fileSize !== undefined || args.contentType !== undefined
+                ? { size: args.fileSize, type: args.contentType }
+                : undefined;
+            await opts.checkUpload(ctx, this.config.bucket, fileInfo);
           }
           return this.generateUploadUrl(undefined, {
             contentLength: args.fileSize,

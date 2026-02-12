@@ -65,6 +65,7 @@ export default function App() {
       setUploadError(
         `File is too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum size is ${MAX_FILE_SIZE / 1024 / 1024}MB.`,
       );
+      event.target.value = "";
       return;
     }
 
@@ -81,11 +82,12 @@ export default function App() {
     } catch (error) {
       const message =
         error instanceof ConvexError
-          ? (error.data as string)
+          ? String(error.data)
           : "Failed to upload file";
       setUploadError(message);
     } finally {
       setUploadProgress(null);
+      event.target.value = "";
     }
   }
 
