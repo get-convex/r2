@@ -158,6 +158,6 @@
     "@convex-dev/action-retrier": "^0.3.0",
     "convex-helpers": "^0.1.67",
     "file-type": "^21",
-    "uuid": "^11.1.0"
+    "uuid": "^13.0.0"
   }
 }
