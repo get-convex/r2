@@ -124,7 +124,7 @@
     "convex-helpers": "^0.1.104",
     "convex-test": "0.0.40",
     "convex-vue": "^0.1.5",
-    "cpy-cli": "^6.0.0",
+    "cpy-cli": "^7.0.0",
     "eslint": "9.39.1",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.0.1",
