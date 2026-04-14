@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.9.2
+
+- Updated dependencies (#41)
+
 ## 0.9.1
 
 - Add Vue hooks with `useUploadFile` composable (#28)
