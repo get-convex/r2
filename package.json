@@ -134,7 +134,7 @@
     "next-themes": "^0.4.6",
     "npm-run-all2": "8.0.4",
     "path-exists-cli": "2.0.0",
-    "pkg-pr-new": "^0.0.60",
+    "pkg-pr-new": "^0.0.66",
     "postcss": "^8.5.6",
     "prettier": "3.6.2",
     "react": "^19.2.0",
@@ -145,7 +145,7 @@
     "typescript": "5.9.3",
     "typescript-eslint": "8.47.0",
     "use-debounce": "^10.0.6",
-    "vite": "6.4.1",
+    "vite": "^6.4.2",
     "vitest": "3.2.4",
     "vue": "^3.5.27",
     "wrangler": "^4.45.2"
@@ -153,11 +153,11 @@
   "types": "./dist/client/index.d.ts",
   "module": "./dist/client/index.js",
   "dependencies": {
-    "@aws-sdk/client-s3": "3.726.1",
-    "@aws-sdk/s3-request-presigner": "^3.693.0",
+    "@aws-sdk/client-s3": "^3.1030.0",
+    "@aws-sdk/s3-request-presigner": "^3.1030.0",
     "@convex-dev/action-retrier": "^0.3.0",
     "convex-helpers": "^0.1.67",
-    "file-type": "^20.4.1",
+    "file-type": "^21",
     "uuid": "^11.1.0"
   }
 }
