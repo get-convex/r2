@@ -109,7 +109,7 @@
     "@tailwindcss/postcss": "4.2.2",
     "@tailwindcss/vite": "4.2.2",
     "@tanstack/react-table": "8.21.3",
-    "@types/node": "20.19.39",
+    "@types/node": "24.12.2",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "5.2.0",
