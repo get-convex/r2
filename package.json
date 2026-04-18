@@ -152,7 +152,7 @@
     "@aws-sdk/s3-request-presigner": "^3.1030.0",
     "@convex-dev/action-retrier": "^0.3.0",
     "convex-helpers": "^0.1.67",
-    "file-type": "^21",
+    "file-type": "^22.0.0",
     "uuid": "^13.0.0"
   }
 }
