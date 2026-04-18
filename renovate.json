@@ -17,6 +17,11 @@
     {
       "matchDepTypes": ["devDependencies"],
       "automerge": true
+    },
+    {
+      "matchPackageNames": ["file-type"],
+      "allowedVersions": "<22",
+      "description": "Pin until Convex default Node.js version moves to 22 (file-type v22 requires Node 22)"
     }
   ],
   "constraints": {
