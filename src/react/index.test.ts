@@ -47,7 +47,10 @@ describe("react useUploadFile", () => {
     const file = new File(["content"], "test.txt", { type: "text/plain" });
     const result = await upload(file);
 
-    expect(mockGenerateUploadUrl).toHaveBeenCalled();
+    expect(mockGenerateUploadUrl).toHaveBeenCalledWith({
+      fileSize: file.size,
+      contentType: "text/plain",
+    });
     expect(uploadWithProgress).toHaveBeenCalledWith(url, file, undefined);
     expect(mockSyncMetadata).toHaveBeenCalledWith({ key });
     expect(result).toBe(key);
