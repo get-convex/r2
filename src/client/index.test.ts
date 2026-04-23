@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
 import type { ComponentApi } from "../component/_generated/component.js";
+import { createR2Client } from "../shared.js";
 import { R2 } from "./index.js";
 
 const mockComponent = {} as ComponentApi;
@@ -76,5 +78,37 @@ describe("R2 lazy initialization", () => {
     });
 
     expect(client.r2).toBe(client.client);
+  });
+});
+
+describe("R2 client Blob upload", () => {
+  // Regression guard for aws/aws-sdk-js-v3#6834.
+  it("does not crash the SDK when uploading a Blob body", async () => {
+    const client = createR2Client({
+      bucket: "test-bucket",
+      endpoint: "https://test.r2.cloudflarestorage.com",
+      accessKeyId: "test-key",
+      secretAccessKey: "test-secret",
+    });
+
+    const sentinel = new Error("reached-transport");
+    client.middlewareStack.add((_next) => async () => Promise.reject(sentinel), {
+      step: "finalizeRequest",
+      priority: "low",
+    });
+
+    const blob = new Blob([new Uint8Array([1, 2, 3, 4, 5])], {
+      type: "application/octet-stream",
+    });
+
+    await expect(
+      client.send(
+        new PutObjectCommand({
+          Bucket: "test-bucket",
+          Key: "test-key",
+          Body: blob,
+        }),
+      ),
+    ).rejects.toBe(sentinel);
   });
 });

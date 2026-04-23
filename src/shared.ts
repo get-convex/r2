@@ -16,6 +16,9 @@ export const createR2Client = (args: Infer<typeof r2ConfigValidator>) => {
       accessKeyId: args.accessKeyId,
       secretAccessKey: args.secretAccessKey,
     },
+    // Blob bodies crash the auto-checksum path in non-Node runtimes.
+    // Workaround per aws/aws-sdk-js-v3#6834.
+    requestChecksumCalculation: "WHEN_REQUIRED",
   });
 };
 
