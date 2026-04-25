@@ -118,6 +118,7 @@ export const insertImage = internalMutation({
 // case, not required). When running the example app, you can run `npx convex run
 // example:store` (or run it in the dashboard) to insert an image this way.
 export const generateAndStoreRandomImage = action({
+  args: {},
   handler: async (ctx) => {
     // Download a random image from picsum.photos
     const url = "https://picsum.photos/200/300";
