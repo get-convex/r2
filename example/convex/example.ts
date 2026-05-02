@@ -69,7 +69,7 @@ export const {
       .withIndex("bucket_key", (q) => q.eq("bucket", bucket).eq("key", key))
       .unique();
     if (image) {
-      await ctx.db.delete(image._id);
+      await ctx.db.delete("images", image._id);
     }
   },
   onSyncMetadata: async (ctx, args) => {
@@ -99,7 +99,7 @@ export const updateImageCaption = mutation({
     caption: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await ctx.db.patch(args.id, {
+    await ctx.db.patch("images", args.id, {
       caption: args.caption,
     });
   },
@@ -118,6 +118,7 @@ export const insertImage = internalMutation({
 // case, not required). When running the example app, you can run `npx convex run
 // example:store` (or run it in the dashboard) to insert an image this way.
 export const generateAndStoreRandomImage = action({
+  args: {},
   handler: async (ctx) => {
     // Download a random image from picsum.photos
     const url = "https://picsum.photos/200/300";
