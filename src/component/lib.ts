@@ -132,7 +132,7 @@ export const upsertMetadata = mutation({
       )
       .unique();
     if (existingMetadata) {
-      await ctx.db.patch(existingMetadata._id, {
+      await ctx.db.patch("metadata", existingMetadata._id, {
         contentType: args.contentType,
         size: args.size,
         sha256: args.sha256,
@@ -206,7 +206,7 @@ export const deleteMetadata = mutation({
       )
       .unique();
     if (metadata) {
-      await ctx.db.delete(metadata._id);
+      await ctx.db.delete("metadata", metadata._id);
     }
   },
 });
@@ -240,7 +240,7 @@ export const deleteObject = mutation({
       )
       .unique();
     if (metadata) {
-      await ctx.db.delete(metadata._id);
+      await ctx.db.delete("metadata", metadata._id);
     }
     await retrier.run(ctx, api.lib.deleteR2Object, args);
   },
