@@ -371,6 +371,103 @@ function Image({ message }: { message: { url: string } }) {
 }
 ```
 
+## Serving Files via a Custom Domain (CDN)
+
+`r2.getUrl()` generates **signed S3 URLs** that expire (default 15 minutes) and
+route directly to R2's S3 API endpoint — bypassing Cloudflare's edge cache. For
+use cases where you need permanent, CDN-cached URLs (profile pictures, avatars,
+public assets), you can connect a custom domain to your R2 bucket and build the
+URL directly from the object key.
+
+### Why signed URLs aren't always enough
+
+| | Signed URLs (`r2.getUrl`) | Custom domain URLs |
+|---|---|---|
+| Expiry | Yes (15 min default, max 7 days) | Never |
+| Cloudflare CDN cache | No — bypasses edge | Yes — served from edge |
+| Clean URL | No — long S3 URL with signature | Yes — `cdn.example.com/key` |
+| Safe to store in DB | No — expires | Yes |
+
+### Setup
+
+**1. Connect a custom domain to your R2 bucket**
+
+The domain must be added as a zone in the same Cloudflare account as your bucket
+(registered via Cloudflare, transferred to Cloudflare, or nameservers pointed to
+Cloudflare). Then:
+
+1. In the [Cloudflare dashboard](https://dash.cloudflare.com/?to=/:account/r2/overview), select your bucket → **Settings** → **Custom Domains** → **Add**
+2. Enter a subdomain (e.g. `cdn.example.com`) → **Connect Domain**
+3. Wait for status to change from **Initializing** → **Active**
+
+Cloudflare automatically creates a proxied CNAME record pointing to your bucket.
+The proxied (orange cloud) status is required — it's what routes traffic through
+Cloudflare's edge so caching can apply.
+
+**2. Add a Cache Rule to cache all file types**
+
+By default, Cloudflare only caches
+[certain file extensions](https://developers.cloudflare.com/cache/concepts/default-cache-behavior/#default-cached-file-extensions).
+To cache all objects in your bucket (including those with no extension, like UUID
+keys), create a Cache Rule:
+
+1. Go to your Cloudflare zone → **Rules** → **Cache Rules** → **Create rule**
+2. Expression: `http.host eq "cdn.example.com"`
+3. Cache eligibility: **Eligible for cache** → **Cache Everything**
+4. Set an appropriate **Edge TTL** (e.g. 1 day for regular assets, 1 year for
+   immutable files)
+5. **Deploy**
+
+**3. Build the URL from the key**
+
+The component does not generate custom domain URLs. Once your domain is set up,
+construct the URL yourself from the object key:
+
+```ts
+// convex/files.ts
+import { R2 } from "@convex-dev/r2";
+import { components } from "./_generated/api";
+import { query } from "./_generated/server";
+
+const r2 = new R2(components.r2);
+
+// Build a permanent CDN URL from a stored object key.
+// R2_CDN_URL env var: e.g. "https://cdn.example.com"
+function getCdnUrl(key: string): string {
+  return `${process.env.R2_CDN_URL}/${key}`;
+}
+
+export const listMessages = query({
+  args: {},
+  handler: async (ctx) => {
+    const messages = await ctx.db.query("messages").collect();
+    return messages.map((message) => ({
+      ...message,
+      // Permanent, CDN-cached URL — safe to store in the database
+      imageUrl: getCdnUrl(message.imageKey),
+    }));
+  },
+});
+```
+
+Set the env var in your Convex deployment:
+
+```sh
+npx convex env set R2_CDN_URL https://cdn.example.com
+```
+
+### When to use each approach
+
+| Scenario | Recommended |
+|---|---|
+| Public asset stored permanently (avatar, attachment) | `getCdnUrl(key)` — permanent, CDN-cached |
+| Time-limited download link | `r2.getUrl(key, { expiresIn: 3600 })` — signed, expires |
+| Private file behind access control | Signed URL, or custom domain + [Cloudflare Access](https://developers.cloudflare.com/r2/tutorials/cloudflare-access/) |
+
+> **Note:** The `r2.dev` public development URL is rate-limited and does not
+> support caching, WAF, or bot management. Do not use it for production, and do
+> not CNAME to it. Use a custom domain instead.
+
 ## Deleting Files
 
 Files stored in R2 can be deleted from actions or mutations via the
