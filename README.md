@@ -434,7 +434,9 @@ const r2 = new R2(components.r2);
 // Build a permanent CDN URL from a stored object key.
 // R2_CDN_URL env var: e.g. "https://cdn.example.com"
 function getCdnUrl(key: string): string {
-  return `${process.env.R2_CDN_URL}/${key}`;
+  const base = process.env.R2_CDN_URL;
+  if (!base) throw new Error("R2_CDN_URL environment variable is not set.");
+  return `${base}/${encodeURIComponent(key)}`;
 }
 
 export const listMessages = query({
