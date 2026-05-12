@@ -371,6 +371,52 @@ function Image({ message }: { message: { url: string } }) {
 }
 ```
 
+## Serving Files from Cloudflare's CDN via Custom Domains
+
+`r2.getUrl()` generates signed S3 URLs that expire (default 15 minutes) and
+route directly to R2's S3 API endpoint, bypassing Cloudflare's edge cache. For
+use cases where you need permanent, CDN-cached URLs (profile pictures, avatars,
+public assets), you can connect a custom domain to your R2 bucket and build the
+URL directly from the object key (eg., cdn.example.com, where example.com is a domain you own).
+
+### Set up an R2 custom domain
+
+You'll first need to connect a custom domain to your R2 bucket - [follow their docs](https://developers.cloudflare.com/rules/origin-rules/tutorials/point-to-r2-bucket-with-custom-domain/) to get started.
+
+Cloudflare caches the most common file types automatically. They provide a complete list as well as info on how to enable caching for less common types [in their docs](https://developers.cloudflare.com/cache/concepts/default-cache-behavior/#default-cached-file-extensions).
+
+### Build a CDN URL from an object key
+
+```ts
+// convex/files.ts
+import { R2 } from "@convex-dev/r2";
+import { components } from "./_generated/api";
+import { query } from "./_generated/server";
+
+const r2 = new R2(components.r2);
+
+// Build CDN URL from a stored object key.
+function getCdnUrl(key: string): string {
+  // Replace with your domain
+  const base = "cdn.example.com"
+  return `${base}/${key.split('/').map(encodeURIComponent).join('/')`
+}
+
+export const listMessages = query({
+  args: {},
+  handler: async (ctx) => {
+    const messages = await ctx.db.query("messages").collect();
+    return messages.map((message) => ({
+      ...message,
+      // Return cached, CDN served image
+      imageUrl: getCdnUrl(message.imageKey),
+    }));
+  },
+});
+```
+
+> **Note:** Don't use the `r2.dev` public development URL in production - it's rate limited and uncached. Use a custom domain instead.
+
 ## Deleting Files
 
 Files stored in R2 can be deleted from actions or mutations via the
