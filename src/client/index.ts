@@ -196,11 +196,21 @@ export class R2 {
    *   - `key` - The R2 object key.
    *   - `url` - A signed URL for uploading the object.
    */
-  async generateUploadUrl(customKey?: string) {
+  async generateUploadUrl(
+    customKey?: string,
+    opts?: { contentLength?: number; contentType?: string },
+  ) {
     const key = customKey || crypto.randomUUID();
     const url = await getSignedUrl(
       this.client,
-      new PutObjectCommand({ Bucket: this.config.bucket, Key: key }),
+      new PutObjectCommand({
+        Bucket: this.config.bucket,
+        Key: key,
+        ...(opts?.contentLength !== undefined && {
+          ContentLength: opts.contentLength,
+        }),
+        ...(opts?.contentType && { ContentType: opts.contentType }),
+      }),
     );
     return { key, url };
   }
@@ -353,9 +363,15 @@ export class R2 {
       ctx: GenericQueryCtx<DataModel>,
       bucket: string,
     ) => void | Promise<void>;
+    /**
+     * Called during both `generateUploadUrl` (with `fileInfo`) and
+     * `syncMetadata` (without `fileInfo`). Implementations should
+     * treat `fileInfo` as optional — e.g. use `fileInfo?.size`.
+     */
     checkUpload?: (
       ctx: GenericQueryCtx<DataModel>,
       bucket: string,
+      fileInfo?: { size?: number; type?: string },
     ) => void | Promise<void>;
     checkDelete?: (
       ctx: GenericQueryCtx<DataModel>,
@@ -383,16 +399,32 @@ export class R2 {
        * Generate a signed URL for uploading an object to R2.
        */
       generateUploadUrl: mutationGeneric({
-        args: {},
+        args: {
+          fileSize: v.optional(v.number()),
+          contentType: v.optional(v.string()),
+        },
         returns: v.object({
           key: v.string(),
           url: v.string(),
         }),
-        handler: async (ctx) => {
-          if (opts?.checkUpload) {
-            await opts.checkUpload(ctx, this.config.bucket);
+        handler: async (ctx, args) => {
+          if (
+            args.fileSize !== undefined &&
+            (!Number.isInteger(args.fileSize) || args.fileSize < 0)
+          ) {
+            throw new Error("fileSize must be a non-negative integer");
           }
-          return this.generateUploadUrl();
+          if (opts?.checkUpload) {
+            const fileInfo =
+              args.fileSize !== undefined || args.contentType !== undefined
+                ? { size: args.fileSize, type: args.contentType }
+                : undefined;
+            await opts.checkUpload(ctx, this.config.bucket, fileInfo);
+          }
+          return this.generateUploadUrl(undefined, {
+            contentLength: args.fileSize,
+            contentType: args.contentType,
+          });
         },
       }),
       /**
