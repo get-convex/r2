@@ -1,8 +1,9 @@
 import {
   type ApiFromModules,
   createFunctionHandle,
+  type FunctionArgs,
   type FunctionReference,
-  type GenericActionCtx,
+  type FunctionReturnType,
   type GenericDataModel,
   type GenericMutationCtx,
   type GenericQueryCtx,
@@ -81,17 +82,27 @@ export type ClientApi = ApiFromModules<{
 }>["client"];
 
 // e.g. `ctx` from a Convex mutation or action.
+// Hand-rolled minimal signatures instead of indexing into
+// GenericQueryCtx/GenericMutationCtx: those gained an extra optional options
+// argument in convex 1.41.0 that GenericActionCtx doesn't have, which would
+// make action ctx no longer assignable here.
 type RunQueryCtx = {
-  runQuery: GenericQueryCtx<GenericDataModel>["runQuery"];
+  runQuery: <Query extends FunctionReference<"query", "internal">>(
+    query: Query,
+    args: FunctionArgs<Query>
+  ) => Promise<FunctionReturnType<Query>>;
 };
-type RunMutationCtx = {
-  runQuery: GenericQueryCtx<GenericDataModel>["runQuery"];
-  runMutation: GenericMutationCtx<GenericDataModel>["runMutation"];
+type RunMutationCtx = RunQueryCtx & {
+  runMutation: <Mutation extends FunctionReference<"mutation", "internal">>(
+    mutation: Mutation,
+    args: FunctionArgs<Mutation>
+  ) => Promise<FunctionReturnType<Mutation>>;
 };
-type RunActionCtx = {
-  runAction: GenericActionCtx<GenericDataModel>["runAction"];
-  runQuery: GenericQueryCtx<GenericDataModel>["runQuery"];
-  runMutation: GenericMutationCtx<GenericDataModel>["runMutation"];
+type RunActionCtx = RunMutationCtx & {
+  runAction: <Action extends FunctionReference<"action", "internal">>(
+    action: Action,
+    args: FunctionArgs<Action>
+  ) => Promise<FunctionReturnType<Action>>;
 };
 
 export class R2 {
