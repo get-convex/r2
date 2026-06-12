@@ -1,9 +1,8 @@
 import {
   type ApiFromModules,
   createFunctionHandle,
-  type FunctionArgs,
   type FunctionReference,
-  type FunctionReturnType,
+  type GenericActionCtx,
   type GenericDataModel,
   type GenericMutationCtx,
   type GenericQueryCtx,
@@ -81,29 +80,20 @@ export type ClientApi = ApiFromModules<{
   client: ReturnType<R2["clientApi"]>;
 }>["client"];
 
-// e.g. `ctx` from a Convex mutation or action.
-// Hand-rolled minimal signatures instead of indexing into
-// GenericQueryCtx/GenericMutationCtx: those gained an extra optional options
-// argument in convex 1.41.0 that GenericActionCtx doesn't have, which would
-// make action ctx no longer assignable here.
-type RunQueryCtx = {
-  runQuery: <Query extends FunctionReference<"query", "internal">>(
-    query: Query,
-    args: FunctionArgs<Query>
-  ) => Promise<FunctionReturnType<Query>>;
-};
-type RunMutationCtx = RunQueryCtx & {
-  runMutation: <Mutation extends FunctionReference<"mutation", "internal">>(
-    mutation: Mutation,
-    args: FunctionArgs<Mutation>
-  ) => Promise<FunctionReturnType<Mutation>>;
-};
-type RunActionCtx = RunMutationCtx & {
-  runAction: <Action extends FunctionReference<"action", "internal">>(
-    action: Action,
-    args: FunctionArgs<Action>
-  ) => Promise<FunctionReturnType<Action>>;
-};
+// e.g. `ctx` from a Convex query, mutation, or action. Unions of ctx types
+// picked from the real ctx variants, so signatures match the types callers
+// actually provide. Indexing into a single ctx type broke on convex 1.41.0,
+// which added an extra optional options argument to runQuery/runMutation on
+// query/mutation ctxs but not action ctxs.
+type QueryCtx = Pick<GenericQueryCtx<GenericDataModel>, "runQuery">;
+type MutationCtx = Pick<
+  GenericMutationCtx<GenericDataModel>,
+  "runQuery" | "runMutation"
+>;
+type ActionCtx = Pick<
+  GenericActionCtx<GenericDataModel>,
+  "runQuery" | "runMutation" | "runAction"
+>;
 
 export class R2 {
   public readonly config: Infer<typeof r2ConfigValidator>;
@@ -230,7 +220,7 @@ export class R2 {
    */
 
   async store(
-    ctx: RunActionCtx,
+    ctx: ActionCtx,
     file: Uint8Array | Buffer | Blob,
     opts: string | { key?: string; type?: string; disposition?: string; cacheControl?: string } = {},
   ) {
@@ -279,7 +269,7 @@ export class R2 {
    * @param key - The R2 object key.
    * @returns A promise that resolves when the metadata is synced.
    */
-  async syncMetadata(ctx: RunActionCtx, key: string) {
+  async syncMetadata(ctx: ActionCtx, key: string) {
     await ctx.runAction(this.component.lib.syncMetadata, {
       key: key,
       ...this.config,
@@ -292,7 +282,7 @@ export class R2 {
    * @param key - The R2 object key.
    * @returns A promise that resolves to the metadata for the object.
    */
-  async getMetadata(ctx: RunQueryCtx, key: string) {
+  async getMetadata(ctx: QueryCtx | MutationCtx | ActionCtx, key: string) {
     return ctx.runQuery(this.component.lib.getMetadata, {
       key: key,
       ...this.config,
@@ -305,7 +295,7 @@ export class R2 {
    * @param limit (optional) - The maximum number of documents to return.
    * @returns A promise that resolves to an array of metadata documents.
    */
-  async listMetadata(ctx: RunQueryCtx, limit?: number, cursor?: string | null) {
+  async listMetadata(ctx: QueryCtx | MutationCtx | ActionCtx, limit?: number, cursor?: string | null) {
     return ctx.runQuery(this.component.lib.listMetadata, {
       ...this.config,
       limit: limit,
@@ -319,7 +309,7 @@ export class R2 {
    * @param key - The R2 object key.
    * @returns A promise that resolves when the object is deleted.
    */
-  async deleteObject(ctx: RunMutationCtx, key: string) {
+  async deleteObject(ctx: MutationCtx | ActionCtx, key: string) {
     await ctx.runMutation(this.component.lib.deleteObject, {
       key: key,
       ...this.config,
