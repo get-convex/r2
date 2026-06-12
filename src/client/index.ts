@@ -80,19 +80,15 @@ export type ClientApi = ApiFromModules<{
   client: ReturnType<R2["clientApi"]>;
 }>["client"];
 
-// e.g. `ctx` from a Convex mutation or action.
-type RunQueryCtx = {
-  runQuery: GenericQueryCtx<GenericDataModel>["runQuery"];
-};
-type RunMutationCtx = {
-  runQuery: GenericQueryCtx<GenericDataModel>["runQuery"];
-  runMutation: GenericMutationCtx<GenericDataModel>["runMutation"];
-};
-type RunActionCtx = {
-  runAction: GenericActionCtx<GenericDataModel>["runAction"];
-  runQuery: GenericQueryCtx<GenericDataModel>["runQuery"];
-  runMutation: GenericMutationCtx<GenericDataModel>["runMutation"];
-};
+type QueryCtx = Pick<GenericQueryCtx<GenericDataModel>, "runQuery">;
+type MutationCtx = Pick<
+  GenericMutationCtx<GenericDataModel>,
+  "runQuery" | "runMutation"
+>;
+type ActionCtx = Pick<
+  GenericActionCtx<GenericDataModel>,
+  "runQuery" | "runMutation" | "runAction"
+>;
 
 export class R2 {
   public readonly config: Infer<typeof r2ConfigValidator>;
@@ -158,8 +154,7 @@ export class R2 {
     } = {},
   ) {
     this.config = {
-      bucket:
-        options?.bucket ?? options?.R2_BUCKET ?? process.env.R2_BUCKET!,
+      bucket: options?.bucket ?? options?.R2_BUCKET ?? process.env.R2_BUCKET!,
       endpoint:
         options?.endpoint ?? options?.R2_ENDPOINT ?? process.env.R2_ENDPOINT!,
       accessKeyId:
@@ -219,9 +214,16 @@ export class R2 {
    */
 
   async store(
-    ctx: RunActionCtx,
+    ctx: ActionCtx,
     file: Uint8Array | Buffer | Blob,
-    opts: string | { key?: string; type?: string; disposition?: string; cacheControl?: string } = {},
+    opts:
+      | string
+      | {
+          key?: string;
+          type?: string;
+          disposition?: string;
+          cacheControl?: string;
+        } = {},
   ) {
     if (typeof opts === "string") {
       opts = { key: opts };
@@ -268,7 +270,7 @@ export class R2 {
    * @param key - The R2 object key.
    * @returns A promise that resolves when the metadata is synced.
    */
-  async syncMetadata(ctx: RunActionCtx, key: string) {
+  async syncMetadata(ctx: ActionCtx, key: string) {
     await ctx.runAction(this.component.lib.syncMetadata, {
       key: key,
       ...this.config,
@@ -281,7 +283,7 @@ export class R2 {
    * @param key - The R2 object key.
    * @returns A promise that resolves to the metadata for the object.
    */
-  async getMetadata(ctx: RunQueryCtx, key: string) {
+  async getMetadata(ctx: QueryCtx | MutationCtx | ActionCtx, key: string) {
     return ctx.runQuery(this.component.lib.getMetadata, {
       key: key,
       ...this.config,
@@ -294,7 +296,11 @@ export class R2 {
    * @param limit (optional) - The maximum number of documents to return.
    * @returns A promise that resolves to an array of metadata documents.
    */
-  async listMetadata(ctx: RunQueryCtx, limit?: number, cursor?: string | null) {
+  async listMetadata(
+    ctx: QueryCtx | MutationCtx | ActionCtx,
+    limit?: number,
+    cursor?: string | null,
+  ) {
     return ctx.runQuery(this.component.lib.listMetadata, {
       ...this.config,
       limit: limit,
@@ -308,7 +314,7 @@ export class R2 {
    * @param key - The R2 object key.
    * @returns A promise that resolves when the object is deleted.
    */
-  async deleteObject(ctx: RunMutationCtx, key: string) {
+  async deleteObject(ctx: MutationCtx | ActionCtx, key: string) {
     await ctx.runMutation(this.component.lib.deleteObject, {
       key: key,
       ...this.config,
