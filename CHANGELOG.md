@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.10.2
+
+- Improve type compatibility with convex 1.41+ (#66)
+
 ## 0.10.1
 
 - Fix Blob uploads broken by SDK auto-checksum
