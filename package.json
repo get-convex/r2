@@ -71,7 +71,7 @@
   },
   "peerDependencies": {
     "convex": "^1.24.8",
-    "convex-svelte": "^0.0.11 || ^0.0.12",
+    "convex-svelte": "^0.0.11 || ^0.0.12 || ^0.13.0",
     "convex-vue": "^0.1.5",
     "react": "^18 || ^19",
     "react-dom": "^18 || ^19",
