@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { describe, expect, it, vi } from "vitest";
+import { HeadObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import type { ComponentApi } from "../component/_generated/component.js";
 import { createR2Client } from "../shared.js";
 import { R2 } from "./index.js";
@@ -110,5 +110,45 @@ describe("R2 client Blob upload", () => {
         }),
       ),
     ).rejects.toBe(sentinel);
+  });
+});
+
+describe("R2 client request signing", () => {
+  it("provides Buffer before signing requests in the edge runtime", async () => {
+    vi.stubGlobal("Buffer", undefined);
+    expect(globalThis.Buffer).toBeUndefined();
+    vi.resetModules();
+
+    try {
+      const { createR2Client: createEdgeR2Client } =
+        await import("../shared.js");
+      expect(globalThis.Buffer).toBeDefined();
+
+      const client = createEdgeR2Client({
+        bucket: "test-bucket",
+        endpoint: "https://test.r2.cloudflarestorage.com",
+        accessKeyId: "test-key",
+        secretAccessKey: "test-secret",
+      });
+
+      const sentinel = new Error("reached-transport");
+      client.middlewareStack.add(
+        (_next) => async () => Promise.reject(sentinel),
+        {
+          step: "deserialize",
+        },
+      );
+
+      await expect(
+        client.send(
+          new HeadObjectCommand({
+            Bucket: "test-bucket",
+            Key: "test-key",
+          }),
+        ),
+      ).rejects.toBe(sentinel);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });
