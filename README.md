@@ -168,7 +168,6 @@ for React and Svelte that handle the entire upload process:
    ```tsx
    // src/App.tsx
    import { FormEvent, useRef, useState } from "react";
-   import { useAction } from "convex/react";
    import { api } from "../convex/_generated/api";
    import { useUploadFile } from "@convex-dev/r2/react";
 
