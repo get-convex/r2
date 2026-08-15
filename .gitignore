@@ -16,3 +16,4 @@ node_modules
 
 # ai
 /.claude
+config.bat
