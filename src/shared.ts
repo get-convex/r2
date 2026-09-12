@@ -1,5 +1,12 @@
 import { v, type GenericValidator, type Infer } from "convex/values";
 import { S3Client } from "@aws-sdk/client-s3";
+import { Buffer } from "buffer";
+
+// Some AWS SigV4 implementations require Buffer, which Convex's V8 runtime
+// does not provide.
+if (typeof globalThis.Buffer === "undefined") {
+  globalThis.Buffer = Buffer;
+}
 
 export const r2ConfigValidator = v.object({
   bucket: v.string(),
