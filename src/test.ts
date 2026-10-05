@@ -15,6 +15,7 @@ export function register(
   name: string = "r2",
 ) {
   t.registerComponent(name, schema, modules);
-  actionRetrier.register(t);
+  // The component installs action-retrier as a child, so it lives at "<name>/actionRetrier".
+  actionRetrier.register(t, `${name}/actionRetrier`);
 }
 export default { register, schema, modules };
