@@ -117,8 +117,7 @@
     "chokidar-cli": "3.0.0",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
-    "convex": "1.35.1",
-    "convex-helpers": "0.1.114",
+    "convex": "1.46.0",
     "convex-svelte": "0.0.12",
     "convex-test": "0.0.48",
     "convex-vue": "0.1.5",
@@ -140,10 +139,10 @@
     "typescript": "5.9.3",
     "typescript-eslint": "8.58.2",
     "use-debounce": "10.1.1",
-    "vite": "8.0.8",
+    "vite": "8.3.1",
     "vitest": "5.0.0",
-    "vue": "3.5.32",
-    "wrangler": "4.82.2"
+    "vue": "3.5.43",
+    "wrangler": "4.148.0"
   },
   "types": "./dist/client/index.d.ts",
   "module": "./dist/client/index.js",
@@ -151,7 +150,7 @@
     "@aws-sdk/client-s3": "^3.1030.0",
     "@aws-sdk/s3-request-presigner": "^3.1030.0",
     "@convex-dev/action-retrier": "^0.3.0",
-    "convex-helpers": "^0.1.67",
+    "convex-helpers": "^0.1.127",
     "file-type": "^21",
     "uuid": "^14.0.0"
   }
