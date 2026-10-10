@@ -35,7 +35,10 @@ describe("vue useUploadFile", () => {
     const file = new File(["content"], "test.txt", { type: "text/plain" });
     const result = await upload(file);
 
-    expect(mockMutation).toHaveBeenCalledWith(mockApi.generateUploadUrl, {});
+    expect(mockMutation).toHaveBeenCalledWith(mockApi.generateUploadUrl, {
+      fileSize: file.size,
+      contentType: "text/plain",
+    });
     expect(uploadWithProgress).toHaveBeenCalledWith(url, file, undefined);
     expect(mockMutation).toHaveBeenCalledWith(mockApi.syncMetadata, { key });
     expect(result).toBe(key);
