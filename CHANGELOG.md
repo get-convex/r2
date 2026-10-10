@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.10.4
+
+- Updates the /test entrypoint for compatibility with convex-test's new
+  `defineTestApp` capability.
+- Bumps convex peer dependency to ^1.25.4
+
+## 0.10.3
+
+- Update peer dependencies, including widening convex-svelte to include 0.13.0
+
 ## 0.10.2
 
 - Improve type compatibility with convex 1.41+ (#66)
