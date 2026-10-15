@@ -6,6 +6,7 @@ import {
   type GenericDataModel,
   type GenericMutationCtx,
   type GenericQueryCtx,
+  type PaginationOptions,
   internalMutationGeneric,
   mutationGeneric,
   paginationOptsValidator,
@@ -294,17 +295,27 @@ export class R2 {
    *
    * @param ctx - A Convex query context.
    * @param limit (optional) - The maximum number of documents to return.
+   * @param cursor (optional) - The cursor to start the page from.
+   * @param opts (optional) - `endCursor`, `maximumRowsRead` and
+   *   `maximumBytesRead`, as in `PaginationOptions`.
    * @returns A promise that resolves to an array of metadata documents.
    */
   async listMetadata(
     ctx: QueryCtx | MutationCtx | ActionCtx,
     limit?: number,
     cursor?: string | null,
+    opts?: Pick<
+      PaginationOptions,
+      "endCursor" | "maximumRowsRead" | "maximumBytesRead"
+    >,
   ) {
     return ctx.runQuery(this.component.lib.listMetadata, {
       ...this.config,
       limit: limit,
       cursor: cursor ?? undefined,
+      endCursor: opts?.endCursor,
+      maximumRowsRead: opts?.maximumRowsRead,
+      maximumBytesRead: opts?.maximumBytesRead,
     });
   }
   /**
@@ -484,6 +495,11 @@ export class R2 {
             ctx,
             args.paginationOpts.numItems,
             args.paginationOpts.cursor,
+            {
+              endCursor: args.paginationOpts.endCursor,
+              maximumRowsRead: args.paginationOpts.maximumRowsRead,
+              maximumBytesRead: args.paginationOpts.maximumBytesRead,
+            },
           );
         },
       }),

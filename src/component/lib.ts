@@ -88,6 +88,9 @@ export const listMetadata = query({
   args: {
     limit: v.optional(v.number()),
     cursor: v.optional(v.string()),
+    endCursor: v.optional(v.union(v.string(), v.null())),
+    maximumRowsRead: v.optional(v.number()),
+    maximumBytesRead: v.optional(v.number()),
     ...r2ConfigValidator.fields,
   },
   returns: paginationReturnValidator(
@@ -98,7 +101,14 @@ export const listMetadata = query({
     }),
   ),
   handler: async (ctx, args) => {
-    const { limit, cursor, ...r2Config } = args;
+    const {
+      limit,
+      cursor,
+      endCursor,
+      maximumRowsRead,
+      maximumBytesRead,
+      ...r2Config
+    } = args;
     const r2 = createR2Client(r2Config);
     const results = await ctx.db
       .query("metadata")
@@ -106,6 +116,9 @@ export const listMetadata = query({
       .paginate({
         numItems: limit ?? DEFAULT_LIST_LIMIT,
         cursor: cursor ?? null,
+        endCursor,
+        maximumRowsRead,
+        maximumBytesRead,
       });
     return {
       ...results,
