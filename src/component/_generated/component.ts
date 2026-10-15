@@ -87,8 +87,11 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
           accessKeyId: string;
           bucket: string;
           cursor?: string;
+          endCursor?: string | null;
           endpoint: string;
           limit?: number;
+          maximumBytesRead?: number;
+          maximumRowsRead?: number;
           secretAccessKey: string;
         },
         {

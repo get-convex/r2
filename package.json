@@ -119,7 +119,7 @@
     "clsx": "2.1.1",
     "convex": "1.46.0",
     "convex-svelte": "0.0.12",
-    "convex-test": "0.0.62",
+    "convex-test": "https://pkg.pr.new/convex-test@163",
     "convex-vue": "0.1.5",
     "eslint": "9.39.4",
     "eslint-plugin-react": "7.37.5",
