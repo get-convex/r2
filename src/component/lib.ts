@@ -17,7 +17,6 @@ import type { Doc, TableNames } from "./_generated/dataModel.js";
 import { api, components } from "./_generated/api.js";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { asyncMap } from "convex-helpers";
-import { paginator } from "convex-helpers/server/pagination";
 import { ActionRetrier } from "@convex-dev/action-retrier";
 import type { R2Callbacks } from "../client/index.js";
 
@@ -101,7 +100,7 @@ export const listMetadata = query({
   handler: async (ctx, args) => {
     const { limit, cursor, ...r2Config } = args;
     const r2 = createR2Client(r2Config);
-    const results = await paginator(ctx.db, schema)
+    const results = await ctx.db
       .query("metadata")
       .withIndex("bucket", (q) => q.eq("bucket", r2Config.bucket))
       .paginate({
