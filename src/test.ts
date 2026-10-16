@@ -1,7 +1,6 @@
 /// <reference types="vite/client" />
 import type { TestConvex } from "convex-test";
 import type { GenericSchema, SchemaDefinition } from "convex/server";
-import { componentsGeneric } from "convex/server";
 import type { ComponentApi } from "./component/_generated/component.js";
 import schema from "./component/schema.js";
 import actionRetrier from "@convex-dev/action-retrier/test";
@@ -18,9 +17,9 @@ export function register(
   t: TestConvex<SchemaDefinition<GenericSchema, boolean>>,
   name: string = "r2",
 ) {
-  t.registerComponent(name, schema, modules);
+  const component = t.registerComponent(name, schema, modules);
   // The component installs action-retrier as a child, so it lives at "<name>/actionRetrier".
   actionRetrier.register(t, `${name}/actionRetrier`);
-  return componentsGeneric()[name] as unknown as ComponentApi;
+  return component as unknown as ComponentApi;
 }
 export default { register, schema, modules };
