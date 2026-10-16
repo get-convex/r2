@@ -17,7 +17,9 @@ export function register(
   t: TestConvex<SchemaDefinition<GenericSchema, boolean>>,
   name: string = "r2",
 ) {
-  actionRetrier.register(t);
-  return t.registerComponent(name, schema, modules) as unknown as ComponentApi;
+  const component = t.registerComponent(name, schema, modules);
+  // The component installs action-retrier as a child, so it lives at "<name>/actionRetrier".
+  actionRetrier.register(t, `${name}/actionRetrier`);
+  return component as unknown as ComponentApi;
 }
 export default { register, schema, modules };
